@@ -1,0 +1,38 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+*.test
+*.out
+
+# Go workspace file
+go.work
+go.work.sum
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Vendor
+vendor/
+
+# Tools
+.tools/
+
+# Wire generated files
+wire_gen.go
+
+# Config generated files
+*.pb.go
+
+# Debug files
+docs/swagger-ui.html
+docs/.openapi-temp.yaml
+
+# OS
+.DS_Store

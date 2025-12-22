@@ -1,0 +1,17 @@
+# Server configuration
+server:
+  # Machine ID for distributed ID generation (Sonyflake)
+  # Each instance should have a unique machine_id (0-65535)
+  machine_id: ""
+
+  # HTTP server
+  http:
+    addr: 0.0.0.0:{{.Scaffold.http_port}}
+    timeout: 20s
+    # Enable Swagger documentation endpoint
+    docs: true
+
+  # gRPC server
+  grpc:
+    addr: 0.0.0.0:{{.Scaffold.grpc_port}}
+    timeout: 20s

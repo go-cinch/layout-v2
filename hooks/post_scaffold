@@ -1,0 +1,164 @@
+#!/bin/bash
+# Post-scaffold hook to rename proto and service files
+
+set -e
+
+PROJECT_NAME="{{ .Computed.service_name_final }}"
+PROTO_TEMPLATE="{{ .Scaffold.proto_template }}"
+PROJECT_DIR="{{ .Project }}"
+ENABLE_DB="{{ .Computed.enable_db_final }}"
+ORM_TYPE="{{ .Computed.orm_type_final }}"
+ENABLE_GEN_MODEL="{{ .Computed.enable_gen_model_final }}"
+
+# Change to project directory
+cd "$PROJECT_DIR"
+
+echo "Post-scaffold hook: Cleaning up file names..."
+echo "Working in: $(pwd)"
+
+# Rename migration files with timestamp
+if [ "$ENABLE_DB" = "true" ] && [ -d "./internal/db/migrations" ]; then
+    TIMESTAMP=$(date +"%Y%m%d%H")
+    find ./internal/db/migrations -type f -name "YYYYMMDDHH-*.sql" 2>/dev/null | while read -r file; do
+        newfile="${file/YYYYMMDDHH/$TIMESTAMP}"
+        if [ -f "$file" ] && [ ! -f "$newfile" ]; then
+            mv "$file" "$newfile"
+            echo "Renamed migration: $(basename $file) -> $(basename $newfile)"
+        fi
+    done
+fi
+
+# Remove the unselected proto and service files
+if [ "$PROTO_TEMPLATE" = "simple" ]; then
+    # Remove .full files
+    find ./api -type f -name "*.full.proto" -delete 2>/dev/null || true
+    find ./internal/service -type f -name "service.full.go" -delete 2>/dev/null || true
+    find ./internal/data -type f -name "game.full.go" -delete 2>/dev/null || true
+    find ./internal/biz -type f -name "game.full.go" -delete 2>/dev/null || true
+    echo "Removed .full template files"
+
+    # Rename .simple.proto to .proto (if any exist)
+    find ./api -type f -name "*.simple.proto" 2>/dev/null | while read -r file; do
+        newfile="${file/.simple.proto/.proto}"
+        if [ -f "$file" ] && [ ! -f "$newfile" ]; then
+            mv "$file" "$newfile"
+            echo "Renamed: $file -> $newfile"
+        fi
+    done
+
+    # Rename service.simple.go to service.go (if exists)
+    if [ -f "./internal/service/service.simple.go" ] && [ ! -f "./internal/service/service.go" ]; then
+        mv "./internal/service/service.simple.go" "./internal/service/service.go"
+        echo "Renamed: service.simple.go -> service.go"
+    fi
+
+    # Rename game.simple.go to game.go in data layer (if exists)
+    if [ -f "./internal/data/game.simple.go" ] && [ ! -f "./internal/data/game.go" ]; then
+        mv "./internal/data/game.simple.go" "./internal/data/game.go"
+        echo "Renamed: game.simple.go -> game.go"
+    fi
+
+    # Rename game.simple.go to game.go in biz layer (if exists)
+    if [ -f "./internal/biz/game.simple.go" ] && [ ! -f "./internal/biz/game.go" ]; then
+        mv "./internal/biz/game.simple.go" "./internal/biz/game.go"
+        echo "Renamed: biz/game.simple.go -> biz/game.go"
+    fi
+
+elif [ "$PROTO_TEMPLATE" = "full" ]; then
+    # Remove .simple files
+    find ./api -type f -name "*.simple.proto" -delete 2>/dev/null || true
+    find ./internal/service -type f -name "service.simple.go" -delete 2>/dev/null || true
+    find ./internal/data -type f -name "game.simple.go" -delete 2>/dev/null || true
+    find ./internal/biz -type f -name "game.simple.go" -delete 2>/dev/null || true
+    echo "Removed .simple template files"
+
+    # Rename .full.proto to .proto (if any exist)
+    find ./api -type f -name "*.full.proto" 2>/dev/null | while read -r file; do
+        newfile="${file/.full.proto/.proto}"
+        if [ -f "$file" ] && [ ! -f "$newfile" ]; then
+            mv "$file" "$newfile"
+            echo "Renamed: $file -> $newfile"
+        fi
+    done
+
+    # Rename service.full.go to service.go (if exists)
+    if [ -f "./internal/service/service.full.go" ] && [ ! -f "./internal/service/service.go" ]; then
+        mv "./internal/service/service.full.go" "./internal/service/service.go"
+        echo "Renamed: service.full.go -> service.go"
+    fi
+
+    # Rename game.full.go to game.go in data layer (if exists)
+    if [ -f "./internal/data/game.full.go" ] && [ ! -f "./internal/data/game.go" ]; then
+        mv "./internal/data/game.full.go" "./internal/data/game.go"
+        echo "Renamed: game.full.go -> game.go"
+    fi
+
+    # Rename game.full.go to game.go in biz layer (if exists)
+    if [ -f "./internal/biz/game.full.go" ] && [ ! -f "./internal/biz/game.go" ]; then
+        mv "./internal/biz/game.full.go" "./internal/biz/game.go"
+        echo "Renamed: biz/game.full.go -> biz/game.go"
+    fi
+fi
+
+# Auto-generate models with gentool if enabled
+if [ "$ENABLE_GEN_MODEL" = "true" ] && [ "$ORM_TYPE" = "gorm" ] && [ "$ENABLE_DB" = "true" ]; then
+    echo ""
+    echo "=========================================="
+    echo "Auto-generating GORM models from database"
+    echo "=========================================="
+    echo "Note: This requires database to be running and migrations applied."
+    echo ""
+
+    # Check if database is accessible
+    DB_TYPE=$(grep 'driver:' configs/db.yaml 2>/dev/null | awk '{print $2}')
+
+    if [ -z "$DB_TYPE" ]; then
+        echo "⚠️  Warning: Could not read database config from configs/db.yaml"
+        echo "   Please run the following commands manually:"
+        echo "   1. make init           - Install tools including gentool"
+        echo "   2. make gen-createdb   - Create database"
+        echo "   3. make gen-up         - Run migrations"
+        echo "   4. make gen-model      - Generate models"
+    else
+        echo "1. Installing tools (including gentool)..."
+        if make init 2>&1 | grep -E "(Installing gentool|✓)"; then
+            echo "   ✓ Tools installed"
+        else
+            echo "   ⚠️  Tool installation may have warnings (check output above)"
+        fi
+
+        echo ""
+        echo "2. Creating database if not exists..."
+        if make gen-createdb 2>&1; then
+            echo "   ✓ Database ready"
+        else
+            echo "   ⚠️  Database creation failed or database already exists"
+        fi
+
+        echo ""
+        echo "3. Running migrations..."
+        if make gen-up 2>&1; then
+            echo "   ✓ Migrations applied"
+        else
+            echo "   ⚠️  Migration failed (may be already applied)"
+        fi
+
+        echo ""
+        echo "4. Generating models from database..."
+        if make gen-model 2>&1; then
+            echo "   ✓ Models generated successfully"
+            echo ""
+            echo "Generated models:"
+            ls -1 internal/data/model/*.gen.go 2>/dev/null | sed 's/^/     /' || echo "     (no .gen.go files found)"
+        else
+            echo "   ✗ Model generation failed"
+            echo "   Please check database connection and run 'make gen-model' manually"
+        fi
+    fi
+
+    echo ""
+    echo "=========================================="
+fi
+
+echo "Post-scaffold hook completed successfully"
+

@@ -1,0 +1,15 @@
+# gRPC Client configuration
+# For connecting to other microservices
+client:
+  # Global settings
+  # Enable health check for all clients (recommended for production)
+  health: false
+  # Default timeout for all client calls
+  timeout: 20s
+
+  # Service endpoints
+  # Format: service_name: 'host:port'
+  # Examples:
+  #   auth: 'auth:9000'
+  #   user: 'user-service:9001'
+  #   order: 'order.default.svc.cluster.local:9000'  # Kubernetes service

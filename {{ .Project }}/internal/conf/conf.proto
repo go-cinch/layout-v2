@@ -1,0 +1,85 @@
+syntax = "proto3";
+package cinch.conf;
+
+option go_package = "{{.Computed.module_name_final}}/internal/conf;conf";
+
+import "google/protobuf/duration.proto";
+
+message Bootstrap {
+  string name = 1;
+  string version = 2;
+  Server server = 3;
+  Tracer tracer = 4;
+  DB db = 5;
+  Log log = 6;
+  {{- if .Computed.enable_redis_final }}
+  Redis redis = 7;
+  {{- end }}
+  {{- if and .Computed.enable_redis_final .Computed.enable_task_final }}
+  map<string, Task> task = 8;
+  {{- end }}
+}
+
+message DB {
+  string driver = 1;
+  string dsn = 2;
+  bool migrate = 3;
+}
+
+message Log {
+  string level = 1;
+  bool JSON = 2;
+  bool showSQL = 3;
+}
+
+message Server {
+  message HTTP {
+    string network = 1;
+    string addr = 2;
+    google.protobuf.Duration timeout = 3;
+    bool docs = 4;
+  }
+  message GRPC {
+    string network = 1;
+    string addr = 2;
+    google.protobuf.Duration timeout = 3;
+  }
+  string machineId = 1;
+  HTTP http = 2;
+  GRPC grpc = 3;
+  bool enable_pprof = 4;
+  string language = 5;
+  bool validate = 6;
+  {{- if and .Computed.enable_redis_final .Computed.enable_cache_final }}
+  bool nocache = 7;
+  {{- end }}
+}
+
+message Tracer {
+  message Otlp {
+    string endpoint = 1;
+    bool insecure = 2;
+  }
+  message Stdout {
+    bool prettyPrint = 1;
+  }
+  bool enable = 1;
+  float ratio = 2;
+  Otlp otlp = 3;
+  Stdout stdout = 4;
+}
+
+{{- if .Computed.enable_redis_final }}
+message Redis {
+  string dsn = 1;
+}
+{{- end }}
+
+{{- if and .Computed.enable_redis_final .Computed.enable_task_final }}
+message Task {
+  string name = 1;
+  string expr = 2;
+  int64 timeout = 3;
+  int64 retry = 4;
+}
+{{- end }}

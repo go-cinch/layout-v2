@@ -1,0 +1,121 @@
+syntax = "proto3";
+
+package {{.Computed.service_name_final}}.v1;
+
+import "openapiv3/annotations.proto";
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/empty.proto";
+import "cinch/params/params.proto";
+
+option go_package = "api/{{.Computed.service_name_final}};{{.Computed.service_name_final}}";
+option java_multiple_files = true;
+option java_package = "{{.Computed.service_name_final}}.v1";
+option java_outer_classname = "{{.Computed.service_name_capitalized}}ProtoV1";
+
+option (openapi.v3.document) = {
+  info: {
+    title: "{{.Computed.service_name_capitalized}} service";
+    version: "1.0.0";
+    description: "This is {{.Computed.service_name_final}} service docs";
+  }
+  components: {
+    security_schemes: {
+      additional_properties: [
+        {
+          name: "BearerAuth";
+          value: {
+            security_scheme: {
+              type: "http";
+              scheme: "bearer";
+            }
+          }
+        }
+      ]
+    }
+  }
+  security: [
+    {
+      additional_properties: [
+        {
+          name: "BearerAuth";
+          value: {
+            value: []
+          }
+        }
+      ]
+    }
+  ]
+};
+
+service {{.Computed.service_name_capitalized}} {
+  // create one record
+  rpc Create{{.Computed.service_name_capitalized}} (Create{{.Computed.service_name_capitalized}}Request) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/{{.Computed.service_name_final}}/create"
+      body: "*"
+    };
+  }
+  // query one record
+  rpc Get{{.Computed.service_name_capitalized}} (Get{{.Computed.service_name_capitalized}}Request) returns (Get{{.Computed.service_name_capitalized}}Reply) {
+    option (google.api.http) = {
+      get: "/{{.Computed.service_name_final}}/get"
+    };
+  }
+  // query list by page
+  rpc Find{{.Computed.service_name_capitalized}} (Find{{.Computed.service_name_capitalized}}Request) returns (Find{{.Computed.service_name_capitalized}}Reply) {
+    option (google.api.http) = {
+      get: "/{{.Computed.service_name_final}}/list"
+    };
+  }
+  // update one record by id
+  rpc Update{{.Computed.service_name_capitalized}} (Update{{.Computed.service_name_capitalized}}Request) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/{{.Computed.service_name_final}}/update"
+      body: "*",
+      additional_bindings {
+        patch: "/{{.Computed.service_name_final}}/update",
+        body: "*",
+      }
+    };
+  }
+  // delete one or more record by id
+  rpc Delete{{.Computed.service_name_capitalized}} (params.IdsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/{{.Computed.service_name_final}}/delete"
+    };
+  }
+}
+
+message {{.Computed.service_name_capitalized}}Reply {
+  uint64 id = 1;
+  string name = 2;
+}
+
+message Create{{.Computed.service_name_capitalized}}Request {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Get{{.Computed.service_name_capitalized}}Request {
+  uint64 id = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Get{{.Computed.service_name_capitalized}}Reply {
+  uint64 id = 1;
+  string name = 2;
+}
+
+message Find{{.Computed.service_name_capitalized}}Request {
+  params.Page page = 1;
+  optional string name = 2;
+}
+
+message Find{{.Computed.service_name_capitalized}}Reply {
+  params.Page page = 1;
+  repeated {{.Computed.service_name_capitalized}}Reply list = 2;
+}
+
+message Update{{.Computed.service_name_capitalized}}Request {
+  uint64 id = 1 [(google.api.field_behavior) = REQUIRED];
+  optional string name = 2;
+}

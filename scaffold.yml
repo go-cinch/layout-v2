@@ -1,0 +1,311 @@
+# yaml-language-server: $schema=https://hay-kot.github.io/scaffold/schema.json
+
+messages:
+  pre: |
+    # Go-Cinch Simple Microservice Generator
+
+    This will create a simple Go microservice with HTTP and gRPC servers.
+    Based on Kratos framework with Wire dependency injection.
+
+  post: |
+    # Project Created: {{ .Computed.service_name_final }}
+
+    Next steps:
+      cd {{ .Scaffold.Project }}
+      make init     # Install tools
+      make all      # Generate code and build
+      make run      # Run the service
+
+    HTTP: http://localhost:{{ .Scaffold.http_port }}
+    gRPC: localhost:{{ .Scaffold.grpc_port }}
+
+questions:
+  # ==================== Basic Information ====================
+  - name: service_name
+    prompt:
+      message: Service name (leave empty to use Project name)?
+
+  - name: module_name
+    prompt:
+      message: Go module name (leave empty to use service_name)?
+
+  # ==================== Server Configuration ====================
+  - name: http_port
+    prompt:
+      message: HTTP server port?
+      default: "8080"
+
+  - name: grpc_port
+    prompt:
+      message: gRPC server port?
+      default: "8180"
+
+  - name: enable_health_check
+    prompt:
+      message: Enable health check endpoints?
+      type: string
+      default: "true"
+
+  # ==================== API Configuration ====================
+  - name: proto_template
+    prompt:
+      message: API template (simple=single Get method, full=complete CRUD)?
+      default: "simple"
+
+  # ==================== Database Configuration ====================
+  - name: enable_db
+    prompt:
+      message: 'Enable database support (if false, will use mock data)?'
+      type: string
+      default: "true"
+
+  - name: db_type
+    when: '{{ .enable_db }}'
+    prompt:
+      message: Database type (postgres or mysql)?
+      default: "postgres"
+
+  - name: orm_type
+    when: '{{ .enable_db }}'
+    prompt:
+      message: 'ORM type (none=raw SQL, gorm=native GORM)?'
+      default: "gorm"
+
+  - name: enable_gen_model
+    when: '{{ and .enable_db (eq .orm_type "gorm") }}'
+    prompt:
+      message: 'Auto-generate models from database with gentool (recommended)?'
+      type: string
+      default: "true"
+
+  - name: enable_biz_tx
+    when: '{{ and .enable_db (eq .proto_template "full") }}'
+    prompt:
+      message: 'Enable transaction wrapping for CUD operations in biz layer?'
+      type: string
+      default: "true"
+
+  # ==================== Redis Configuration ====================
+  - name: enable_redis
+    when: '{{ .enable_db }}'
+    prompt:
+      message: 'Enable Redis support (for cache, idempotent, task)?'
+      type: string
+      default: "false"
+
+  - name: enable_cache
+    when: '{{ .enable_redis }}'
+    prompt:
+      message: 'Enable cache layer (biz cache wrapper with Redis)?'
+      type: string
+      default: "true"
+
+  - name: enable_idempotent
+    when: '{{ .enable_redis }}'
+    prompt:
+      message: 'Enable idempotent middleware (x-idempotent header)?'
+      type: string
+      default: "false"
+
+  - name: enable_task
+    when: '{{ .enable_redis }}'
+    prompt:
+      message: 'Enable task/cron worker (distributed task scheduler)?'
+      type: string
+      default: "false"
+
+  # ==================== Middleware Configuration ====================
+  - name: middlewares
+    prompt:
+      message: "Enable optional middlewares (comma-separated: header,xxx) [input 'none' to disable all]?"
+      default: "header"
+
+  - name: enable_trace
+    prompt:
+      message: Enable OpenTelemetry tracing?
+      type: string
+      default: "false"
+
+  - name: enable_ws
+    prompt:
+      message: Enable WebSocket support?
+      type: string
+      default: "false"
+
+  # ==================== Error Handling ====================
+  - name: enable_reason_proto
+    prompt:
+      message: Enable reason-proto for error handling?
+      type: string
+      default: "false"
+
+  - name: enable_i18n
+    when: '{{ .enable_reason_proto }}'
+    prompt:
+      message: Enable i18n support for error messages?
+      type: string
+      default: "false"
+
+computed:
+  # Use provided value, fallback to Project if not provided
+  service_name_final: '{{ or .Scaffold.service_name .Scaffold.Project }}'
+  service_name_capitalized: '{{ toPascalCase (or .Scaffold.service_name .Scaffold.Project) }}'
+  module_name_final: '{{ or .Scaffold.module_name .Scaffold.service_name .Scaffold.Project }}'
+  # Middlewares: convert array ["tenant","header"] to string "tenant,header"
+  # Try multiple strategies: check if slice/array using typeOf or printf, fallback to string
+  # In --no-prompt mode without middlewares param, use default "header"
+  middlewares_final: '{{ $m := .Scaffold.middlewares }}{{ if not $m }}header{{ else }}{{ $t := printf "%T" $m }}{{ if or (hasPrefix $t "[]") (eq $t "[]interface {}") }}{{ $m | join "," }}{{ else }}{{ $m }}{{ end }}{{ end }}'
+  enable_trace_final: '{{ eq .Scaffold.enable_trace "true" }}'
+  enable_ws_final: '{{ eq .Scaffold.enable_ws "true" }}'
+  enable_health_check_final: '{{ eq .Scaffold.enable_health_check "true" }}'
+  enable_db_final: '{{ eq .Scaffold.enable_db "true" }}'
+  enable_reason_proto_final: '{{ eq .Scaffold.enable_reason_proto "true" }}'
+  enable_i18n_final: '{{ eq .Scaffold.enable_i18n "true" }}'
+  enable_gen_model_final: '{{ eq .Scaffold.enable_gen_model "true" }}'
+  enable_biz_tx_final: '{{ eq .Scaffold.enable_biz_tx "true" }}'
+  enable_redis_final: '{{ eq .Scaffold.enable_redis "true" }}'
+  enable_cache_final: '{{ eq .Scaffold.enable_cache "true" }}'
+  enable_idempotent_final: '{{ eq .Scaffold.enable_idempotent "true" }}'
+  enable_task_final: '{{ eq .Scaffold.enable_task "true" }}'
+  db_type_final: '{{ or .Scaffold.db_type "postgres" }}'
+  orm_type_final: '{{ or .Scaffold.orm_type "none" }}'
+
+features:
+  - value: '{{ .Computed.enable_trace_final }}'
+    globs:
+      - "**/internal/data/tracer.go"
+      - "**/configs/tracer.yaml"
+  - value: true
+    globs:
+      - "**/configs/log.yaml"
+  - value: '{{ .Computed.enable_health_check_final }}'
+    globs:
+      - "**/internal/service/health.go"
+      - "**/internal/server/health.go"
+  - value: '{{ contains "header" .Computed.middlewares_final }}'
+    globs:
+      - "**/internal/server/middleware/header.go"
+  - value: '{{ .Computed.enable_db_final }}'
+    globs:
+      - "**/internal/data/data.go"
+      - "**/internal/db/**"
+      - "**/configs/db.yaml"
+  - value: '{{ and .Computed.enable_db_final (eq .Computed.orm_type_final "gorm") }}'
+    globs:
+      - "**/internal/data/model/**"
+  - value: '{{ .Computed.enable_redis_final }}'
+    globs:
+      - "**/configs/redis.yaml"
+  - value: '{{ and .Computed.enable_redis_final .Computed.enable_cache_final }}'
+    globs:
+      - "**/internal/data/cache.go"
+  - value: '{{ and .Computed.enable_redis_final .Computed.enable_idempotent_final }}'
+    globs:
+      - "**/internal/server/middleware/idempotent.go"
+  - value: '{{ and .Computed.enable_redis_final .Computed.enable_task_final }}'
+    globs:
+      - "**/internal/pkg/task/**"
+      - "**/configs/task.yaml"
+  - value: '{{ .Computed.enable_reason_proto_final }}'
+    globs:
+      - "**/api/reason-proto/reason.proto"
+  - value: '{{ .Computed.enable_i18n_final }}'
+    globs:
+      - "**/internal/server/middleware/locales/*.yml"
+  - value: '{{ eq .Scaffold.proto_template "simple" }}'
+    globs:
+      - "**/api/*-proto/*.simple.proto"
+      - "**/internal/service/service.simple.go"
+  - value: '{{ and .Computed.enable_db_final (eq .Scaffold.proto_template "simple") }}'
+    globs:
+      - "**/internal/data/game.simple.go"
+      - "**/internal/biz/game.simple.go"
+  - value: '{{ eq .Scaffold.proto_template "full" }}'
+    globs:
+      - "**/api/*-proto/*.full.proto"
+      - "**/internal/service/service.full.go"
+  - value: '{{ and .Computed.enable_db_final (eq .Scaffold.proto_template "full") }}'
+    globs:
+      - "**/internal/data/game.full.go"
+      - "**/internal/biz/game.full.go"
+  - value: '{{ and .Computed.enable_db_final (eq .Computed.orm_type_final "gorm") (not .Computed.enable_gen_model_final) }}'
+    globs:
+      - "**/internal/data/model/game.go"
+  - value: true
+    globs:
+      - "**/internal/biz/biz.go"
+      - "**/internal/data/client.go"
+      - "**/configs/client.yaml"
+  - value: '{{ eq .Scaffold.proto_template "full" }}'
+    globs:
+      - "**/internal/tests/**"
+  - value: '{{ .Computed.enable_ws_final }}'
+    globs:
+      - "**/internal/server/ws.go"
+      - "**/internal/service/ws.go"
+
+presets:
+  # Default preset for quick start with full features
+  default:
+    service_name: ""
+    module_name: ""
+    http_port: "8080"
+    grpc_port: "8180"
+    enable_health_check: "true"
+    proto_template: "full"
+    enable_db: "true"
+    db_type: "postgres"
+    orm_type: "gorm"
+    enable_gen_model: "true"
+    enable_ws: "true"
+    enable_biz_tx: "true"
+    enable_redis: "true"
+    enable_cache: "true"
+    enable_idempotent: "true"
+    enable_task: "true"
+    middlewares: "header"
+    enable_trace: "true"
+    enable_reason_proto: "true"
+    enable_i18n: "true"
+  simple:
+    service_name: ""
+    module_name: ""
+    http_port: "8080"
+    grpc_port: "8180"
+    enable_health_check: "true"
+    proto_template: "simple"
+    enable_db: "true"
+    db_type: "postgres"
+    orm_type: "gorm"
+    enable_gen_model: "true"
+    enable_ws: "false"
+    enable_biz_tx: "false"
+    enable_redis: "false"
+    enable_cache: "false"
+    enable_idempotent: "false"
+    enable_task: "false"
+    middlewares: "header"
+    enable_trace: "true"
+    enable_reason_proto: "false"
+    enable_i18n: "false"
+  noredis:
+    service_name: ""
+    module_name: ""
+    http_port: "8080"
+    grpc_port: "8180"
+    enable_health_check: "true"
+    proto_template: "full"
+    enable_db: "true"
+    db_type: "postgres"
+    orm_type: "gorm"
+    enable_gen_model: "true"
+    enable_ws: "false"
+    enable_biz_tx: "true"
+    enable_redis: "false"
+    enable_cache: "false"
+    enable_idempotent: "false"
+    enable_task: "false"
+    middlewares: "header"
+    enable_trace: "true"
+    enable_reason_proto: "false"
+    enable_i18n: "false"

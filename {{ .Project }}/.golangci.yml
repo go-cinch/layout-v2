@@ -1,0 +1,39 @@
+version: "2"
+
+run:
+  timeout: 3m
+  tests: true
+
+issues:
+  max-same-issues: 0
+  exclude:
+    - "too many lines above return"
+  exclude-rules:
+    - linters:
+        - wsl_v5
+      text: "too many lines above return"
+
+linters:
+  default: fast
+  enable:
+    - wsl_v5
+  disable:
+    - wsl
+    - depguard
+    - nlreturn
+    - funcorder
+    - mnd
+  settings:
+    funlen:
+      lines: 120
+      statements: 60
+    lll:
+      line-length: 200
+    cyclop:
+      max-complexity: 15
+    wsl_v5:
+      allow-first-in-block: true
+      allow-whole-block: false
+      branch-max-lines: 2
+      disable:
+        - return

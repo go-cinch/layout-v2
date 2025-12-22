@@ -1,0 +1,4 @@
+log:
+  level: info
+  JSON: true
+  showSQL: true
