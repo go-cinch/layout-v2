@@ -10,9 +10,9 @@ import (
 	"gorm.io/gorm"
 {{- end }}
 
-	"github.com/go-cinch/common/log"
+	"{{.Computed.common_module_final}}/log"
 {{- if eq .Computed.orm_type_final "gorm" }}
-	"github.com/go-cinch/common/copierx"
+	"{{.Computed.common_module_final}}/copierx"
 {{- end }}
 
 	"{{.Computed.module_name_final}}/internal/biz"

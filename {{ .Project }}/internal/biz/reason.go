@@ -4,7 +4,7 @@ import (
 	"context"
 {{- if .Computed.enable_i18n_final }}
 
-	"github.com/go-cinch/common/middleware/i18n"
+	"{{.Computed.common_module_final}}/middleware/i18n"
 {{- end }}
 {{- if .Computed.enable_reason_proto_final }}
 	"{{.Computed.module_name_final}}/api/reason"

@@ -2,14 +2,14 @@ package server
 
 import (
 {{- if .Computed.enable_db_final }}
-	tenantMiddleware "github.com/go-cinch/common/middleware/tenant/v2"
+	tenantMiddleware "{{.Computed.common_module_final}}/middleware/tenant/v2"
 {{- end }}
 {{- if .Computed.enable_i18n_final }}
-	"github.com/go-cinch/common/i18n"
-	i18nMiddleware "github.com/go-cinch/common/middleware/i18n"
+	"{{.Computed.common_module_final}}/i18n"
+	i18nMiddleware "{{.Computed.common_module_final}}/middleware/i18n"
 	"golang.org/x/text/language"
 {{- end }}
-	"github.com/go-cinch/common/middleware/logging"
+	"{{.Computed.common_module_final}}/middleware/logging"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/middleware/metadata"
 	"github.com/go-kratos/kratos/v2/middleware/ratelimit"
@@ -17,7 +17,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/validate"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 {{- if .Computed.enable_trace_final }}
-	traceMiddleware "github.com/go-cinch/common/middleware/trace"
+	traceMiddleware "{{.Computed.common_module_final}}/middleware/trace"
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 {{- end }}
 

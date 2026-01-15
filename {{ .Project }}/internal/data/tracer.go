@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-cinch/common/log"
+	"{{.Computed.common_module_final}}/log"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

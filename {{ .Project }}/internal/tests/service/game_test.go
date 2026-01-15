@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-cinch/common/proto/params"
+	"{{.Computed.common_module_final}}/proto/params"
 	"github.com/google/uuid"
 
 	"{{ .Computed.module_name_final }}/api/{{ .Computed.service_name_final }}"

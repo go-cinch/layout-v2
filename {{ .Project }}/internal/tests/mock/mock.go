@@ -11,7 +11,7 @@ import (
 	"sync"
 
 {{- if or (eq .Computed.db_type_final "mysql") .Computed.enable_redis_final }}
-	"github.com/go-cinch/common/mock"
+	"{{.Computed.common_module_final}}/mock"
 {{- end }}
 	"github.com/go-kratos/kratos/v2/transport"
 

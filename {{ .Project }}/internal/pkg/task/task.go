@@ -3,8 +3,8 @@ package task
 import (
 	"context"
 
-	"github.com/go-cinch/common/log"
-	"github.com/go-cinch/common/worker"
+	"{{.Computed.common_module_final}}/log"
+	"{{.Computed.common_module_final}}/worker"
 	"github.com/google/wire"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"

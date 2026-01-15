@@ -3,7 +3,7 @@ package service
 import (
 	"net/http"
 
-	"github.com/go-cinch/common/log"
+	"{{.Computed.common_module_final}}/log"
 	"github.com/gorilla/websocket"
 )
 

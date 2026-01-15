@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 
-	"github.com/go-cinch/common/copierx"
-	"github.com/go-cinch/common/page/v2"
-	"github.com/go-cinch/common/proto/params"
-	"github.com/go-cinch/common/utils"
+	"{{.Computed.common_module_final}}/copierx"
+	"{{.Computed.common_module_final}}/page/v2"
+	"{{.Computed.common_module_final}}/proto/params"
+	"{{.Computed.common_module_final}}/utils"
 	"github.com/google/wire"
 	"google.golang.org/protobuf/types/known/emptypb"
 {{- if .Computed.enable_trace_final }}

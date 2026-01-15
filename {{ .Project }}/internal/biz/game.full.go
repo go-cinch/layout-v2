@@ -9,12 +9,12 @@ import (
 {{- end }}
 
 {{- if .Computed.enable_cache_final }}
-	"github.com/go-cinch/common/constant"
-	"github.com/go-cinch/common/copierx"
+	"{{.Computed.common_module_final}}/constant"
+	"{{.Computed.common_module_final}}/copierx"
 {{- end }}
-	"github.com/go-cinch/common/page/v2"
+	"{{.Computed.common_module_final}}/page/v2"
 {{- if .Computed.enable_cache_final }}
-	"github.com/go-cinch/common/utils"
+	"{{.Computed.common_module_final}}/utils"
 	"github.com/pkg/errors"
 {{- end }}
 

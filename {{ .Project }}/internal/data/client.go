@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-cinch/common/log"
+	"{{.Computed.common_module_final}}/log"
 	"github.com/go-kratos/kratos/v2/middleware/circuitbreaker"
 	"github.com/go-kratos/kratos/v2/middleware/metadata"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
