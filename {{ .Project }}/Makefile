@@ -21,7 +21,7 @@ GENTOOL := $(TOOLS_DIR)/bin/gentool
 {{ end }}
 
 # golangci-lint configuration
-GOLANGCI_LINT_VERSION ?= v2.6.2
+GOLANGCI_LINT_VERSION ?= v2.8.0
 GOLANGCI_LINT := $(TOOLS_DIR)/bin/golangci-lint
 
 ifeq ($(GOHOSTOS), windows)
@@ -51,7 +51,7 @@ init:
 {{- end }}
 {{ end }}
 	@echo "Installing golangci-lint $(GOLANGCI_LINT_VERSION)..."
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 .PHONY: config
 # generate internal proto
