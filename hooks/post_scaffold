@@ -64,6 +64,22 @@ if [ "$PROTO_TEMPLATE" = "simple" ]; then
         echo "Renamed: biz/game.simple.go -> biz/game.go"
     fi
 
+    # Rename game.go to actual service name
+    if [ "$PROJECT_NAME" != "game" ]; then
+        if [ -f "./internal/data/game.go" ]; then
+            mv "./internal/data/game.go" "./internal/data/${PROJECT_NAME}.go"
+            echo "Renamed: data/game.go -> data/${PROJECT_NAME}.go"
+        fi
+        if [ -f "./internal/biz/game.go" ]; then
+            mv "./internal/biz/game.go" "./internal/biz/${PROJECT_NAME}.go"
+            echo "Renamed: biz/game.go -> biz/${PROJECT_NAME}.go"
+        fi
+        if [ -f "./internal/tests/service/game_test.go" ]; then
+            mv "./internal/tests/service/game_test.go" "./internal/tests/service/${PROJECT_NAME}_test.go"
+            echo "Renamed: game_test.go -> ${PROJECT_NAME}_test.go"
+        fi
+    fi
+
 elif [ "$PROTO_TEMPLATE" = "full" ]; then
     # Remove .simple files
     find ./api -type f -name "*.simple.proto" -delete 2>/dev/null || true
@@ -97,6 +113,22 @@ elif [ "$PROTO_TEMPLATE" = "full" ]; then
     if [ -f "./internal/biz/game.full.go" ] && [ ! -f "./internal/biz/game.go" ]; then
         mv "./internal/biz/game.full.go" "./internal/biz/game.go"
         echo "Renamed: biz/game.full.go -> biz/game.go"
+    fi
+
+    # Rename game.go to actual service name
+    if [ "$PROJECT_NAME" != "game" ]; then
+        if [ -f "./internal/data/game.go" ]; then
+            mv "./internal/data/game.go" "./internal/data/${PROJECT_NAME}.go"
+            echo "Renamed: data/game.go -> data/${PROJECT_NAME}.go"
+        fi
+        if [ -f "./internal/biz/game.go" ]; then
+            mv "./internal/biz/game.go" "./internal/biz/${PROJECT_NAME}.go"
+            echo "Renamed: biz/game.go -> biz/${PROJECT_NAME}.go"
+        fi
+        if [ -f "./internal/tests/service/game_test.go" ]; then
+            mv "./internal/tests/service/game_test.go" "./internal/tests/service/${PROJECT_NAME}_test.go"
+            echo "Renamed: game_test.go -> ${PROJECT_NAME}_test.go"
+        fi
     fi
 fi
 
