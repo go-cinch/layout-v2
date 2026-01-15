@@ -274,10 +274,8 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 		item.ID = ro.data.ID(ctx)
 	}
 
-	m := model.{{ .Computed.service_name_capitalized }}{
-		ID:   item.ID,
-		Name: &item.Name,
-	}
+	var m model.{{ .Computed.service_name_capitalized }}
+	copierx.Copy(&m, item)
 	err = db.Create(ctx, &m)
 	if err != nil {
 		log.WithError(err).Error("create {{ .Computed.service_name_final }} failed")
