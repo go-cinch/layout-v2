@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/go-cinch/common/log"
+	"{{.Computed.common_module_final}}/log"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 

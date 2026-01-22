@@ -3,7 +3,7 @@ package middleware
 import (
 	"context"
 
-	"github.com/go-cinch/common/idempotent"
+	"{{.Computed.common_module_final}}/idempotent"
 	"github.com/go-kratos/kratos/v2/middleware"
 	"github.com/go-kratos/kratos/v2/transport"
 	"github.com/redis/go-redis/v9"

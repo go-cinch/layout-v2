@@ -1,3 +1,7 @@
+SHELL := /usr/bin/env bash
+
+SERVICE_NAME ?= {{.Computed.service_name_final}}
+
 GOHOSTOS:=$(shell go env GOHOSTOS)
 GOPATH:=$(shell go env GOPATH)
 VERSION=$(shell git describe --tags --always)
@@ -6,6 +10,21 @@ HTTP_PORT:=$(shell grep -A 3 'http:' configs/server.yaml | grep 'addr:' | awk -F
 
 # Tools directory
 TOOLS_DIR := .tools
+
+# Tool versions (pinned; override with `make VAR=...` as needed)
+PROTOC_GEN_GO_VERSION ?= v1.36.11
+PROTOC_GEN_GO_GRPC_VERSION ?= v1.6.0
+PROTOC_GEN_GO_ERRORS_VERSION ?= c7a58ff59f80
+PROTOC_GEN_GO_HTTP_VERSION ?= c7a58ff59f80
+PROTOC_GEN_OPENAPI_VERSION ?= v0.7.1
+PROTOC_GEN_VALIDATE_VERSION ?= v1.3.0
+WIRE_VERSION ?= v0.7.0
+{{ if .Computed.enable_db_final -}}
+SQL_MIGRATE_VERSION ?= v1.8.1
+{{- if eq .Computed.orm_type_final "gorm" }}
+GENTOOL_VERSION ?= v0.0.2
+{{- end }}
+{{ end -}}
 PROTOC_GEN_GO := $(TOOLS_DIR)/bin/protoc-gen-go
 PROTOC_GEN_GO_GRPC := $(TOOLS_DIR)/bin/protoc-gen-go-grpc
 PROTOC_GEN_GO_ERRORS := $(TOOLS_DIR)/bin/protoc-gen-go-errors
@@ -13,17 +32,15 @@ PROTOC_GEN_GO_HTTP := $(TOOLS_DIR)/bin/protoc-gen-go-http
 PROTOC_GEN_OPENAPI := $(TOOLS_DIR)/bin/protoc-gen-openapi
 PROTOC_GEN_VALIDATE := $(TOOLS_DIR)/bin/protoc-gen-validate
 WIRE := $(TOOLS_DIR)/bin/wire
-{{ if .Computed.enable_db_final }}
+{{ if .Computed.enable_db_final -}}
 SQL_MIGRATE := $(TOOLS_DIR)/bin/sql-migrate
 {{- if eq .Computed.orm_type_final "gorm" }}
 GENTOOL := $(TOOLS_DIR)/bin/gentool
 {{- end }}
 {{ end }}
-
 # golangci-lint configuration
-GOLANGCI_LINT_VERSION ?= v2.6.2
-GOLANGCI_LINT_DIR := $(TOOLS_DIR)/golangci-lint/$(GOLANGCI_LINT_VERSION)
-GOLANGCI_LINT := $(GOLANGCI_LINT_DIR)/bin/golangci-lint
+GOLANGCI_LINT_VERSION ?= v2.8.0
+GOLANGCI_LINT := $(TOOLS_DIR)/bin/golangci-lint
 
 ifeq ($(GOHOSTOS), windows)
 	Git_Bash= $(subst cmd\,bin\bash.exe,$(dir $(shell where git)))
@@ -35,25 +52,55 @@ else
 endif
 
 .PHONY: init
-# init env
+# init env (install local toolchain into .tools/bin)
 init:
 	@mkdir -p $(TOOLS_DIR)/bin
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@latest
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@latest
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install github.com/google/gnostic/cmd/protoc-gen-openapi@latest
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install github.com/envoyproxy/protoc-gen-validate@latest
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install github.com/google/wire/cmd/wire@latest
-{{ if .Computed.enable_db_final }}
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin go install github.com/rubenv/sql-migrate/...@latest
+	@echo "=== Installing toolchain to $(TOOLS_DIR)/bin ==="
+	@if [ ! -x "$(PROTOC_GEN_GO)" ]; then \
+		echo "  → protoc-gen-go ($(PROTOC_GEN_GO_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install google.golang.org/protobuf/cmd/protoc-gen-go@$(PROTOC_GEN_GO_VERSION); \
+	fi
+	@if [ ! -x "$(PROTOC_GEN_GO_GRPC)" ]; then \
+		echo "  → protoc-gen-go-grpc ($(PROTOC_GEN_GO_GRPC_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@$(PROTOC_GEN_GO_GRPC_VERSION); \
+	fi
+	@if [ ! -x "$(PROTOC_GEN_GO_ERRORS)" ]; then \
+		echo "  → protoc-gen-go-errors ($(PROTOC_GEN_GO_ERRORS_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install github.com/go-kratos/kratos/cmd/protoc-gen-go-errors/v2@$(PROTOC_GEN_GO_ERRORS_VERSION); \
+	fi
+	@if [ ! -x "$(PROTOC_GEN_GO_HTTP)" ]; then \
+		echo "  → protoc-gen-go-http ($(PROTOC_GEN_GO_HTTP_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install github.com/go-kratos/kratos/cmd/protoc-gen-go-http/v2@$(PROTOC_GEN_GO_HTTP_VERSION); \
+	fi
+	@if [ ! -x "$(PROTOC_GEN_OPENAPI)" ]; then \
+		echo "  → protoc-gen-openapi ($(PROTOC_GEN_OPENAPI_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install github.com/google/gnostic/cmd/protoc-gen-openapi@$(PROTOC_GEN_OPENAPI_VERSION); \
+	fi
+	@if [ ! -x "$(PROTOC_GEN_VALIDATE)" ]; then \
+		echo "  → protoc-gen-validate ($(PROTOC_GEN_VALIDATE_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install github.com/envoyproxy/protoc-gen-validate@$(PROTOC_GEN_VALIDATE_VERSION); \
+	fi
+	@if [ ! -x "$(WIRE)" ]; then \
+		echo "  → wire ($(WIRE_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install github.com/google/wire/cmd/wire@$(WIRE_VERSION); \
+	fi
+{{- if .Computed.enable_db_final }}
+	@if [ ! -x "$(SQL_MIGRATE)" ]; then \
+		echo "  → sql-migrate ($(SQL_MIGRATE_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install github.com/rubenv/sql-migrate/...@$(SQL_MIGRATE_VERSION); \
+	fi
 {{- if eq .Computed.orm_type_final "gorm" }}
-	@GOBIN=$(PWD)/$(TOOLS_DIR)/bin GOTOOLCHAIN=go1.24.6 go install gorm.io/gen/tools/gentool@latest
+	@if [ ! -x "$(GENTOOL)" ]; then \
+		echo "  → gentool ($(GENTOOL_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install gorm.io/gen/tools/gentool@$(GENTOOL_VERSION); \
+	fi
 {{- end }}
-{{ end }}
-	@echo "Installing golangci-lint $(GOLANGCI_LINT_VERSION)..."
-	@mkdir -p $(GOLANGCI_LINT_DIR)
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOLANGCI_LINT_DIR)/bin $(GOLANGCI_LINT_VERSION)
+{{- end }}
+	@if [ ! -x "$(GOLANGCI_LINT)" ]; then \
+		echo "  → golangci-lint ($(GOLANGCI_LINT_VERSION))"; \
+		GOBIN="$(PWD)/$(TOOLS_DIR)/bin" go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION); \
+	fi
+	@echo "=== Toolchain installation complete ==="
 
 .PHONY: config
 # generate internal proto
@@ -93,7 +140,7 @@ api:
 wire:
 	cd cmd/{{.Computed.service_name_final}} && ../../$(TOOLS_DIR)/bin/wire
 
-{{ if .Computed.enable_db_final }}
+{{ if .Computed.enable_db_final -}}
 .PHONY: gen-createdb
 # create database (only needed once)
 gen-createdb:
@@ -101,35 +148,21 @@ gen-createdb:
 	@echo "Creating PostgreSQL database {{ .Computed.service_name_final }}..."
 	@if docker ps --filter "name=pg" --format "{{ print "{{" }}.Names{{ print "}}" }}" | grep -q "^pg$$"; then \
 		echo "Found running PostgreSQL container: pg"; \
-		PG_USER=$$(grep 'dsn:' configs/db.yaml | sed 's/.*user=\([^ ]*\).*/\1/'); \
-		PG_PASSWORD=$$(grep 'dsn:' configs/db.yaml | sed 's/.*password=\([^ ]*\).*/\1/'); \
+		PG_USER=$$(grep 'dsn:' configs/db.yaml | sed 's|.*postgresql://\([^:]*\):.*|\1|'); \
+		PG_PASSWORD=$$(grep 'dsn:' configs/db.yaml | sed 's|.*postgresql://[^:]*:\([^@]*\)@.*|\1|'); \
 		echo "Using PostgreSQL user: $$PG_USER"; \
 		docker exec -e PGPASSWORD=$$PG_PASSWORD pg psql -U $$PG_USER -d postgres -c "CREATE DATABASE {{ .Computed.service_name_final }};" 2>&1 | grep -v "already exists" || true; \
 		echo "✓ Database '{{ .Computed.service_name_final }}' is ready"; \
-	elif docker ps -a --filter "name=pg" --format "{{ print "{{" }}.Names{{ print "}}" }}" | grep -q "^pg$$"; then \
-		echo "❌ PostgreSQL container 'pg' exists but not running. Please start it first."; \
-		exit 1; \
-	else \
-		echo "❌ No PostgreSQL container named 'pg' found."; \
-		echo "Please create database manually using psql or other tools."; \
-		exit 1; \
 	fi
 {{- else }}
 	@echo "Creating MySQL database {{ .Computed.service_name_final }}..."
 	@if docker ps --filter "name=mysql" --format "{{ print "{{" }}.Names{{ print "}}" }}" | grep -q "^mysql$$"; then \
 		echo "Found running MySQL container: mysql"; \
-		MYSQL_USER=$$(grep 'dsn:' configs/db.yaml | sed 's/.*\/\/\([^:]*\):.*/\1/' | sed 's/^\s*"\?//' | sed 's/\s*$$//' | cut -d: -f1); \
-		MYSQL_PASSWORD=$$(grep 'dsn:' configs/db.yaml | sed 's/.*\/\/[^:]*:\([^@]*\)@.*/\1/'); \
+		MYSQL_USER=$$(grep 'dsn:' configs/db.yaml | grep -v '#' | sed 's/.*dsn: *"\([^:]*\):.*/\1/'); \
+		MYSQL_PASSWORD=$$(grep 'dsn:' configs/db.yaml | grep -v '#' | sed 's/.*dsn: *"[^:]*:\([^@]*\)@.*/\1/'); \
 		echo "Using MySQL user: $$MYSQL_USER"; \
 		docker exec mysql mysql -u$$MYSQL_USER -p$$MYSQL_PASSWORD -e "CREATE DATABASE IF NOT EXISTS {{ .Computed.service_name_final }};" 2>&1 | grep -v "already exists" || true; \
 		echo "✓ Database '{{ .Computed.service_name_final }}' is ready"; \
-	elif docker ps -a --filter "name=mysql" --format "{{ print "{{" }}.Names{{ print "}}" }}" | grep -q "^mysql$$"; then \
-		echo "❌ MySQL container 'mysql' exists but not running. Please start it first."; \
-		exit 1; \
-	else \
-		echo "❌ No MySQL container named 'mysql' found."; \
-		echo "Please create database manually using mysql client or other tools."; \
-		exit 1; \
 	fi
 {{- end }}
 
@@ -137,7 +170,7 @@ gen-createdb:
 # generate sql-migrate config from db.yaml (internal use)
 gen-config:
 	@echo "development:" > /tmp/sql-migrate-$$$$.yml
-	@echo "  dialect: $$(grep 'driver:' configs/db.yaml | awk '{print $$2}')" >> /tmp/sql-migrate-$$$$.yml
+	@echo "  dialect: $$(grep 'driver:' configs/db.yaml | grep -v '#' | awk '{print $$2}')" >> /tmp/sql-migrate-$$$$.yml
 	@echo "  datasource: $$(grep 'dsn:' configs/db.yaml | sed 's/.*dsn: *"\(.*\)".*/\1/' | sed 's/TimeZone=UTC//')" >> /tmp/sql-migrate-$$$$.yml
 	@echo "  dir: internal/db/migrations" >> /tmp/sql-migrate-$$$$.yml
 	@echo "  table: schema_migrations" >> /tmp/sql-migrate-$$$$.yml
@@ -149,7 +182,7 @@ gen-up:
 	@echo "Running database migrations up..."
 	@TMP_CONFIG=$$(mktemp /tmp/sql-migrate.XXXXXX.yml); \
 	echo "development:" > $$TMP_CONFIG; \
-	echo "  dialect: $$(grep 'driver:' configs/db.yaml | awk '{print $$2}')" >> $$TMP_CONFIG; \
+	echo "  dialect: $$(grep 'driver:' configs/db.yaml | grep -v '#' | awk '{print $$2}')" >> $$TMP_CONFIG; \
 	echo "  datasource: $$(grep 'dsn:' configs/db.yaml | sed 's/.*dsn: *"\(.*\)".*/\1/' | sed 's/TimeZone=UTC//')" >> $$TMP_CONFIG; \
 	echo "  dir: internal/db/migrations" >> $$TMP_CONFIG; \
 	echo "  table: schema_migrations" >> $$TMP_CONFIG; \
@@ -168,7 +201,7 @@ gen-down:
 	@echo "Running database migrations down..."
 	@TMP_CONFIG=$$(mktemp /tmp/sql-migrate.XXXXXX.yml); \
 	echo "development:" > $$TMP_CONFIG; \
-	echo "  dialect: $$(grep 'driver:' configs/db.yaml | awk '{print $$2}')" >> $$TMP_CONFIG; \
+	echo "  dialect: $$(grep 'driver:' configs/db.yaml | grep -v '#' | awk '{print $$2}')" >> $$TMP_CONFIG; \
 	echo "  datasource: $$(grep 'dsn:' configs/db.yaml | sed 's/.*dsn: *"\(.*\)".*/\1/' | sed 's/TimeZone=UTC//')" >> $$TMP_CONFIG; \
 	echo "  dir: internal/db/migrations" >> $$TMP_CONFIG; \
 	echo "  table: schema_migrations" >> $$TMP_CONFIG; \
@@ -180,7 +213,7 @@ gen-down:
 gen-status:
 	@TMP_CONFIG=$$(mktemp /tmp/sql-migrate.XXXXXX.yml); \
 	echo "development:" > $$TMP_CONFIG; \
-	echo "  dialect: $$(grep 'driver:' configs/db.yaml | awk '{print $$2}')" >> $$TMP_CONFIG; \
+	echo "  dialect: $$(grep 'driver:' configs/db.yaml | grep -v '#' | awk '{print $$2}')" >> $$TMP_CONFIG; \
 	echo "  datasource: $$(grep 'dsn:' configs/db.yaml | sed 's/.*dsn: *"\(.*\)".*/\1/' | sed 's/TimeZone=UTC//')" >> $$TMP_CONFIG; \
 	echo "  dir: internal/db/migrations" >> $$TMP_CONFIG; \
 	echo "  table: schema_migrations" >> $$TMP_CONFIG; \
@@ -193,7 +226,7 @@ gen-status:
 # generate GORM models from database using gentool
 gen-model:
 	@echo "Generating GORM models from database..."
-	@DB_TYPE=$$(grep 'driver:' configs/db.yaml | awk '{print $$2}'); \
+	@DB_TYPE=$$(grep 'driver:' configs/db.yaml | grep -v '#' | awk '{print $$2}'); \
 	DSN=$$(awk '/^[[:space:]]*driver:/{flag=1} flag && /^[[:space:]]*dsn:/{print; exit}' configs/db.yaml | sed 's/.*dsn: *"\(.*\)".*/\1/'); \
 	echo "Database: $$DB_TYPE"; \
 	echo "DSN: $$DSN"; \
@@ -216,7 +249,6 @@ gen-model:
 	fi
 	@echo "Applying customizations..."; \
 	USE_CARBON=$$(grep 'useCarbonTime:' configs/db.yaml | awk '{print $$2}'); \
-	USE_UINT64=$$(grep 'useUint64Id:' configs/db.yaml | awk '{print $$2}'); \
 	REMOVE_PTR=$$(grep 'removeNullablePointer:' configs/db.yaml | awk '{print $$2}'); \
 	JSON_STRING_FIELDS=$$(awk '/^[[:space:]]*jsonStringFields:/{flag=1; next} /^[[:space:]]*[a-zA-Z]/{flag=0} flag && /^[[:space:]]*-/{print}' configs/db.yaml | sed 's/^ *- *//' | tr '\n' '|' | sed 's/|$$//'); \
 	for file in internal/data/model/*.gen.go; do \
@@ -227,16 +259,21 @@ gen-model:
 				sed -i.bak 's/time\.Time/carbon.DateTime/g' "$$file"; \
 				echo "  - Converted time.Time to carbon.DateTime in $$file"; \
 			fi; \
-			if [ "$$USE_UINT64" = "true" ]; then \
-				sed -i.bak 's/ID[[:space:]]*int64/ID        uint64/g' "$$file"; \
-				echo "  - Converted int64 to uint64 for ID in $$file"; \
-			fi; \
 			if [ -n "$$JSON_STRING_FIELDS" ]; then \
+				TABLE_NAME=$$(basename "$$file" .gen.go); \
 				IFS='|' read -ra FIELDS <<< "$$JSON_STRING_FIELDS"; \
-				for field in "$${FIELDS[@]}"; do \
-					sed -i.bak "s/\(json:\"$$field\)\"/\1,string\"/g" "$$file"; \
+				for field_spec in "$${FIELDS[@]}"; do \
+					if echo "$$field_spec" | grep -q '\.'; then \
+						SPEC_TABLE=$$(echo "$$field_spec" | cut -d'.' -f1); \
+						SPEC_FIELD=$$(echo "$$field_spec" | cut -d'.' -f2); \
+						if [ "$$TABLE_NAME" = "$$SPEC_TABLE" ]; then \
+							sed -i.bak "s/\(json:\"$$SPEC_FIELD\)\"/\1,string\"/g" "$$file"; \
+							echo "  - Added ,string to $$SPEC_TABLE.$$SPEC_FIELD in $$file"; \
+						fi; \
+					else \
+						sed -i.bak "s/\(json:\"$$field_spec\)\"/\1,string\"/g" "$$file"; \
+					fi; \
 				done; \
-				echo "  - Added ,string to JSON tags for fields: $$JSON_STRING_FIELDS in $$file"; \
 			fi; \
 			if [ "$$REMOVE_PTR" = "true" ]; then \
 				sed -i.bak 's/\*carbon\.DateTime/carbon.DateTime/g' "$$file"; \
@@ -295,10 +332,30 @@ gen-model:
 			echo "  - Added $$FIELD_NAME to $$MODEL_TABLE"; \
 		done; \
 	fi
+	@echo "Handling t_ prefix tables..."; \
+	for file in internal/data/model/t_*.gen.go; do \
+		if [ -f "$$file" ]; then \
+			TABLE_NAME=$$(basename "$$file" .gen.go); \
+			NEW_NAME=$${TABLE_NAME#t_}; \
+			NEW_FILE="internal/data/model/$${NEW_NAME}.gen.go"; \
+			OLD_STRUCT=$$(echo "$$TABLE_NAME" | awk -F'_' '{for(i=1;i<=NF;i++){$$i=toupper(substr($$i,1,1)) substr($$i,2)}}1' OFS=''); \
+			NEW_STRUCT=$$(echo "$$NEW_NAME" | awk -F'_' '{for(i=1;i<=NF;i++){$$i=toupper(substr($$i,1,1)) substr($$i,2)}}1' OFS=''); \
+			sed -i.bak "s/const TableName$$OLD_STRUCT = \"$$TABLE_NAME\"/const TableName$$NEW_STRUCT = \"$$TABLE_NAME\"/g" "$$file"; \
+			sed -i.bak "s/return TableName$$OLD_STRUCT/return TableName$$NEW_STRUCT/g" "$$file"; \
+			sed -i.bak "s/type $$OLD_STRUCT struct/type $$NEW_STRUCT struct/g" "$$file"; \
+			sed -i.bak "s/(\*$$OLD_STRUCT)/(\*$$NEW_STRUCT)/g" "$$file"; \
+			sed -i.bak "s/($$OLD_STRUCT)/($$NEW_STRUCT)/g" "$$file"; \
+			sed -i.bak "s/\*$$OLD_STRUCT/\*$$NEW_STRUCT/g" "$$file"; \
+			sed -i.bak "s/\[\]$$OLD_STRUCT/\[\]$$NEW_STRUCT/g" "$$file"; \
+			sed -i.bak "s/mapped from table <$$TABLE_NAME>/mapped from table <$$TABLE_NAME>/g" "$$file"; \
+			mv "$$file" "$$NEW_FILE"; \
+			rm -f "$$file.bak"; \
+			echo "  - Renamed $$TABLE_NAME -> $$NEW_NAME (struct: $$OLD_STRUCT -> $$NEW_STRUCT)"; \
+		fi; \
+	done
 	@echo "✓ Models generated in internal/data/model/"
 {{- end }}
 {{ end }}
-
 .PHONY: lint
 # run code linters (gofmt + golangci-lint)
 lint:
@@ -316,14 +373,20 @@ lint:
 	fi
 
 .PHONY: build
-# build
+# build service binary
 build:
-	mkdir -p bin/ && go build -ldflags "-s -w -X main.Version=$(VERSION)" -o ./bin/ ./...
+	@mkdir -p bin/
+	@go build -ldflags "-s -w -X main.Version=$(VERSION)" -o ./bin/$(SERVICE_NAME) ./cmd/$(SERVICE_NAME)
 
 .PHONY: run
-# run
+# run service (dev)
 run:
-	cd cmd/{{.Computed.service_name_final}} && go run .
+	@go run ./cmd/$(SERVICE_NAME)
+
+.PHONY: test
+# run tests
+test:
+	@go test ./...
 
 .PHONY: debug-grpc
 # debug grpc with grpcui
@@ -387,6 +450,7 @@ all:
 	go mod tidy
 	make api
 	make config
+	go mod tidy
 	make wire
 	make lint
 

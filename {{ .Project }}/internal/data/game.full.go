@@ -12,10 +12,10 @@ import (
 	"gorm.io/gorm"
 {{- end }}
 
-	"github.com/go-cinch/common/log"
+	"{{.Computed.common_module_final}}/log"
 {{- if eq .Computed.orm_type_final "gorm" }}
-	"github.com/go-cinch/common/copierx"
-	"github.com/go-cinch/common/utils"
+	"{{.Computed.common_module_final}}/copierx"
+	"{{.Computed.common_module_final}}/utils"
 {{- end }}
 	"github.com/google/wire"
 
@@ -56,7 +56,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_final }} WHERE name = $1"
 	err = ro.data.DB.QueryRowContext(ctx, checkSQL, item.Name).Scan(&count)
 	if err != nil {
-		log.WithError(err).Error("check name exists failed")
+		log.WithContext(ctx).WithError(err).Error("check name exists failed")
 		return
 	}
 	if count > 0 {
@@ -70,7 +70,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 	}
 	_, err = ro.data.DB.ExecContext(ctx, insertSQL, item.ID, item.Name)
 	if err != nil {
-		log.WithError(err).Error("create {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("create {{ .Computed.service_name_final }} failed")
 	}
 	return
 }
@@ -84,7 +84,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uin
 		return
 	}
 	if err != nil {
-		log.WithError(err).Error("get {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("get {{ .Computed.service_name_final }} failed")
 	}
 	return
 }
@@ -95,7 +95,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_final }} WHERE name = ?"
 	err = ro.data.DB.QueryRowContext(ctx, checkSQL, item.Name).Scan(&count)
 	if err != nil {
-		log.WithError(err).Error("check name exists failed")
+		log.WithContext(ctx).WithError(err).Error("check name exists failed")
 		return
 	}
 	if count > 0 {
@@ -109,7 +109,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 	}
 	_, err = ro.data.DB.ExecContext(ctx, insertSQL, item.ID, item.Name)
 	if err != nil {
-		log.WithError(err).Error("create {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("create {{ .Computed.service_name_final }} failed")
 	}
 	return
 }
@@ -123,7 +123,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uin
 		return
 	}
 	if err != nil {
-		log.WithError(err).Error("get {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("get {{ .Computed.service_name_final }} failed")
 	}
 	return
 }
@@ -168,7 +168,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Find(ctx context.Context, condi
 
 	rows, err := ro.data.DB.QueryContext(ctx, query, args...)
 	if err != nil {
-		log.WithError(err).Error("find {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("find {{ .Computed.service_name_final }} failed")
 		return
 	}
 	defer rows.Close()
@@ -176,7 +176,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Find(ctx context.Context, condi
 	for rows.Next() {
 		var item biz.{{ .Computed.service_name_capitalized }}
 		if err := rows.Scan(&item.ID, &item.Name); err != nil {
-			log.WithError(err).Warn("scan {{ .Computed.service_name_final }} row failed")
+		log.WithContext(ctx).WithError(err).Warn("scan {{ .Computed.service_name_final }} row failed")
 			continue
 		}
 		rp = append(rp, item)
@@ -191,7 +191,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_final }} WHERE id = ?"
 	err = ro.data.DB.QueryRowContext(ctx, checkSQL, item.ID).Scan(&exists)
 	if err != nil {
-		log.WithError(err).Error("check {{ .Computed.service_name_final }} exists failed")
+		log.WithContext(ctx).WithError(err).Error("check {{ .Computed.service_name_final }} exists failed")
 		return
 	}
 	if exists == 0 {
@@ -205,7 +205,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 		nameCheckSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_final }} WHERE name = ? AND id != ?"
 		err = ro.data.DB.QueryRowContext(ctx, nameCheckSQL, *item.Name, item.ID).Scan(&count)
 		if err != nil {
-			log.WithError(err).Error("check name uniqueness failed")
+			log.WithContext(ctx).WithError(err).Error("check name uniqueness failed")
 			return
 		}
 		if count > 0 {
@@ -227,7 +227,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 
 	_, err = ro.data.DB.ExecContext(ctx, updateSQL, args...)
 	if err != nil {
-		log.WithError(err).Error("update {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("update {{ .Computed.service_name_final }} failed")
 	}
 	return
 }
@@ -248,7 +248,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Delete(ctx context.Context, ids
 
 	_, err = ro.data.DB.ExecContext(ctx, deleteSQL, args...)
 	if err != nil {
-		log.WithError(err).Error("delete {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("delete {{ .Computed.service_name_final }} failed")
 	}
 	return
 }
@@ -262,7 +262,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 	// Check if name exists
 	count, err := db.Where("name = ?", item.Name).Count(ctx, "*")
 	if err != nil {
-		log.WithError(err).Error("check name exists failed")
+		log.WithContext(ctx).WithError(err).Error("check name exists failed")
 		return
 	}
 	if count > 0 {
@@ -274,13 +274,11 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 		item.ID = ro.data.ID(ctx)
 	}
 
-	m := model.{{ .Computed.service_name_capitalized }}{
-		ID:   item.ID,
-		Name: &item.Name,
-	}
+	var m model.{{ .Computed.service_name_capitalized }}
+	copierx.Copy(&m, item)
 	err = db.Create(ctx, &m)
 	if err != nil {
-		log.WithError(err).Error("create {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("create {{ .Computed.service_name_final }} failed")
 	}
 	return
 }
@@ -295,7 +293,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uin
 		return
 	}
 	if err != nil {
-		log.WithError(err).Error("get {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("get {{ .Computed.service_name_final }} failed")
 		return
 	}
 	copierx.Copy(&item, m)
@@ -315,7 +313,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Find(ctx context.Context, condi
 	if !condition.Page.Disable {
 		count, err := db.Count(ctx, "*")
 		if err != nil {
-			log.WithError(err).Error("count {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("count {{ .Computed.service_name_final }} failed")
 			return
 		}
 		condition.Page.Total = count
@@ -338,7 +336,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Find(ctx context.Context, condi
 	// Execute query
 	list, err := db.Find(ctx)
 	if err != nil {
-		log.WithError(err).Error("find {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("find {{ .Computed.service_name_final }} failed")
 		return
 	}
 
@@ -356,7 +354,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 		return
 	}
 	if err != nil {
-		log.WithError(err).Error("get {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("get {{ .Computed.service_name_final }} failed")
 		return
 	}
 
@@ -371,7 +369,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 	if item.Name != nil && (m.Name == nil || *item.Name != *m.Name) {
 		count, err := db.Where("name = ? AND id != ?", *item.Name, item.ID).Count(ctx, "*")
 		if err != nil {
-			log.WithError(err).Error("check name uniqueness failed")
+			log.WithContext(ctx).WithError(err).Error("check name uniqueness failed")
 			return err
 		}
 		if count > 0 {
@@ -384,7 +382,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 	// Note: Use native DB.Updates for map updates, gorm.G.Updates expects struct type
 	err = ro.data.DB(ctx).Where("id = ?", item.ID).Updates(change).Error
 	if err != nil {
-		log.WithError(err).Error("update {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("update {{ .Computed.service_name_final }} failed")
 	}
 	return
 }
@@ -394,7 +392,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Delete(ctx context.Context, ids
 
 	_, err = db.Where("id IN ?", ids).Delete(ctx)
 	if err != nil {
-		log.WithError(err).Error("delete {{ .Computed.service_name_final }} failed")
+		log.WithContext(ctx).WithError(err).Error("delete {{ .Computed.service_name_final }} failed")
 	}
 	return
 }

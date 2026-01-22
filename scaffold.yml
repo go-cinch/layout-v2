@@ -29,6 +29,11 @@ questions:
     prompt:
       message: Go module name (leave empty to use service_name)?
 
+  - name: common_module
+    prompt:
+      message: "Common library base path (for internal networks, e.g., gitlab.internal.com/foo/common)?"
+      default: "github.com/go-cinch/common"
+
   # ==================== Server Configuration ====================
   - name: http_port
     prompt:
@@ -151,6 +156,7 @@ computed:
   service_name_final: '{{ or .Scaffold.service_name .Scaffold.Project }}'
   service_name_capitalized: '{{ toPascalCase (or .Scaffold.service_name .Scaffold.Project) }}'
   module_name_final: '{{ or .Scaffold.module_name .Scaffold.service_name .Scaffold.Project }}'
+  common_module_final: '{{ or .Scaffold.common_module "github.com/go-cinch/common" }}'
   # Middlewares: convert array ["tenant","header"] to string "tenant,header"
   # Try multiple strategies: check if slice/array using typeOf or printf, fallback to string
   # In --no-prompt mode without middlewares param, use default "header"
@@ -266,7 +272,7 @@ presets:
     middlewares: "header"
     enable_trace: "true"
     enable_reason_proto: "true"
-    enable_i18n: "true"
+    enable_i18n: "false"  # i18n.NewError not available in go-cinch/common
   simple:
     service_name: ""
     module_name: ""

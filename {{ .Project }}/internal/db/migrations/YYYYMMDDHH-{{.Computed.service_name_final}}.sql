@@ -1,6 +1,6 @@
 -- +migrate Up
 {{- if eq .Computed.db_type_final "postgres" }}
-CREATE TABLE {{ .Computed.service_name_final }}
+CREATE TABLE t_{{ .Computed.service_name_final }}
 (
     id         BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP(3) NULL,
@@ -8,12 +8,12 @@ CREATE TABLE {{ .Computed.service_name_final }}
     name       VARCHAR(50)
 );
 
-COMMENT ON COLUMN {{ .Computed.service_name_final }}.id IS 'auto increment id';
-COMMENT ON COLUMN {{ .Computed.service_name_final }}.created_at IS 'create time';
-COMMENT ON COLUMN {{ .Computed.service_name_final }}.updated_at IS 'update time';
-COMMENT ON COLUMN {{ .Computed.service_name_final }}.name IS 'name';
+COMMENT ON COLUMN t_{{ .Computed.service_name_final }}.id IS 'auto increment id';
+COMMENT ON COLUMN t_{{ .Computed.service_name_final }}.created_at IS 'create time';
+COMMENT ON COLUMN t_{{ .Computed.service_name_final }}.updated_at IS 'update time';
+COMMENT ON COLUMN t_{{ .Computed.service_name_final }}.name IS 'name';
 {{- else }}
-CREATE TABLE `{{ .Computed.service_name_final }}`
+CREATE TABLE `t_{{ .Computed.service_name_final }}`
 (
     `id`         BIGINT UNSIGNED AUTO_INCREMENT COMMENT 'auto increment id' PRIMARY KEY,
     `created_at` DATETIME(3) NULL COMMENT 'create time',
@@ -26,7 +26,7 @@ CREATE TABLE `{{ .Computed.service_name_final }}`
 
 -- +migrate Down
 {{- if eq .Computed.db_type_final "postgres" }}
-DROP TABLE {{ .Computed.service_name_final }};
+DROP TABLE t_{{ .Computed.service_name_final }};
 {{- else }}
-DROP TABLE `{{ .Computed.service_name_final }}`;
+DROP TABLE `t_{{ .Computed.service_name_final }}`;
 {{- end }}

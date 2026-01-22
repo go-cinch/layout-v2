@@ -3,8 +3,8 @@ package task
 import (
 	"context"
 
-	"github.com/go-cinch/common/log"
-	"github.com/go-cinch/common/worker"
+	"{{.Computed.common_module_final}}/log"
+	"{{.Computed.common_module_final}}/worker"
 	"github.com/google/wire"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel"
@@ -23,6 +23,7 @@ func New(c *conf.Bootstrap) (w *worker.Worker, err error) {
 		worker.WithHandler(func(ctx context.Context, p worker.Payload) error {
 			return process(task{
 				ctx:     ctx,
+				c:       c,
 				payload: p,
 			})
 		}),
@@ -33,7 +34,7 @@ func New(c *conf.Bootstrap) (w *worker.Worker, err error) {
 		return
 	}
 
-	for id, item := range c.Task {
+	for id, item := range c.Task.Cron {
 		err = w.Cron(
 			context.Background(),
 			worker.WithRunUUID(id),
@@ -55,6 +56,7 @@ func New(c *conf.Bootstrap) (w *worker.Worker, err error) {
 
 type task struct {
 	ctx     context.Context
+	c       *conf.Bootstrap
 	payload worker.Payload
 }
 
@@ -62,11 +64,17 @@ func process(t task) (err error) {
 	tr := otel.Tracer("task")
 	ctx, span := tr.Start(t.ctx, "Task")
 	defer span.End()
-	switch t.payload.UID {
-	case "task1":
-		log.WithContext(ctx).Info("task1: %s", t.payload.Payload)
-	case "task2":
-		log.WithContext(ctx).Info("task2: %s", t.payload.Payload)
+
+	// Use task group to match tasks instead of UID
+	// This allows for better organization and reusability
+	// Match against the group names defined in config
+	switch t.payload.Group {
+	case t.c.Task.Group.Every10STask:
+		log.WithContext(ctx).Info("every10s task executed: %s", t.payload.Payload)
+	case t.c.Task.Group.Every3MinTask:
+		log.WithContext(ctx).Info("every3min task executed: %s", t.payload.Payload)
+	default:
+		log.WithContext(ctx).Warn("unknown task group: %s", t.payload.Group)
 	}
 	return
 }

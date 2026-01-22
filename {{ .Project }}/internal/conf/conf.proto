@@ -1,5 +1,5 @@
 syntax = "proto3";
-package cinch.conf;
+package conf;
 
 option go_package = "{{.Computed.module_name_final}}/internal/conf;conf";
 
@@ -16,7 +16,7 @@ message Bootstrap {
   Redis redis = 7;
   {{- end }}
   {{- if and .Computed.enable_redis_final .Computed.enable_task_final }}
-  map<string, Task> task = 8;
+  Task task = 8;
   {{- end }}
 }
 
@@ -76,10 +76,19 @@ message Redis {
 {{- end }}
 
 {{- if and .Computed.enable_redis_final .Computed.enable_task_final }}
-message Task {
+message CronTask {
   string name = 1;
   string expr = 2;
   int64 timeout = 3;
   int64 retry = 4;
+}
+
+message Task {
+  map<string, CronTask> cron = 1;
+  message Group {
+    string every10sTask = 1;
+    string every3minTask = 2;
+  }
+  Group group = 2;
 }
 {{- end }}

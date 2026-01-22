@@ -21,14 +21,5 @@ go.work.sum
 # Vendor
 vendor/
 
-# Tools
-.tools/
-
-# Debug files
-docs/*/*
-docs/swagger-ui.html
-docs/.openapi-temp.yaml
-!docs/{{ .Computed.module_name_final }}-proto/{{ .Computed.module_name_final }}.openapi.yaml
-
 # OS
 .DS_Store

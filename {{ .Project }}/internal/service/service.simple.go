@@ -27,8 +27,8 @@ func New{{.Computed.service_name_capitalized}}Service() *{{.Computed.service_nam
 // Get{{.Computed.service_name_capitalized}} gets a record by id.
 func (s *{{.Computed.service_name_capitalized}}Service) Get{{.Computed.service_name_capitalized}}(ctx context.Context, req *v1.Get{{.Computed.service_name_capitalized}}Request) (*v1.Get{{.Computed.service_name_capitalized}}Reply, error) {
 {{- if .Computed.enable_trace_final }}
-	tr := otel.Tracer("api")
-	_, span := tr.Start(ctx, "Get{{.Computed.service_name_capitalized}}")
+	tr := otel.Tracer("service")
+	ctx, span := tr.Start(ctx, "Get{{.Computed.service_name_capitalized}}")
 	defer span.End()
 {{- end }}
 	return &v1.Get{{.Computed.service_name_capitalized}}Reply{

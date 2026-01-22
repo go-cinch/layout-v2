@@ -16,9 +16,9 @@ import (
 	"time"
 {{- end }}
 
-	"github.com/go-cinch/common/log"
+	"{{.Computed.common_module_final}}/log"
 {{- if .Computed.enable_redis_final }}
-	"github.com/go-cinch/common/utils"
+	"{{.Computed.common_module_final}}/utils"
 {{- end }}
 {{- if eq .Computed.db_type_final "postgres" }}
 	_ "github.com/lib/pq"
@@ -98,13 +98,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-cinch/common/id"
-	"github.com/go-cinch/common/log"
+	"{{.Computed.common_module_final}}/id"
+	"{{.Computed.common_module_final}}/log"
 {{- if .Computed.enable_redis_final }}
-	"github.com/go-cinch/common/utils"
+	"{{.Computed.common_module_final}}/utils"
 {{- end }}
-	glog "github.com/go-cinch/common/plugins/gorm/log"
-	"github.com/go-cinch/common/plugins/gorm/tenant/v2"
+	glog "{{.Computed.common_module_final}}/plugins/gorm/log"
+	"{{.Computed.common_module_final}}/plugins/gorm/tenant/v2"
 {{- if .Computed.enable_redis_final }}
 	"github.com/redis/go-redis/v9"
 {{- end }}
@@ -268,27 +268,27 @@ func NewSonyflake(c *conf.Bootstrap) (*id.Sonyflake, error) {
 func NewRedis(c *conf.Bootstrap) (redis.UniversalClient, error) {
 	return newRedis(c)
 }
-{{- end }}
-{{- end }}
-{{- else }}
-package data
+	{{- end }}
+	{{- end }}
+	{{- else }}
+	package data
 
-import (
+	import (
 {{- if .Computed.enable_redis_final }}
 	"context"
 	"errors"
 	"net/url"
 	"time"
 
-{{- end }}
-	"github.com/go-cinch/common/log"
-{{- if .Computed.enable_redis_final }}
-	"github.com/go-cinch/common/utils"
-	"github.com/redis/go-redis/v9"
-{{- end }}
+	{{- end }}
+		"{{.Computed.common_module_final}}/log"
+	{{- if .Computed.enable_redis_final }}
+		"{{.Computed.common_module_final}}/utils"
+		"github.com/redis/go-redis/v9"
+	{{- end }}
 
-	"{{.Computed.module_name_final}}/internal/conf"
-)
+		"{{.Computed.module_name_final}}/internal/conf"
+	)
 
 // Data represents mock data provider when database is disabled.
 type Data struct {

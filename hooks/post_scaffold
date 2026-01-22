@@ -1,5 +1,5 @@
 #!/bin/bash
-# Post-scaffold hook to rename proto and service files
+# Post-scaffold hook to rename files and initialize project
 
 set -e
 
@@ -10,11 +10,24 @@ ENABLE_DB="{{ .Computed.enable_db_final }}"
 ORM_TYPE="{{ .Computed.orm_type_final }}"
 ENABLE_GEN_MODEL="{{ .Computed.enable_gen_model_final }}"
 
+# Track failed steps
+FAILED_STEPS=()
+
 # Change to project directory
 cd "$PROJECT_DIR"
 
-echo "Post-scaffold hook: Cleaning up file names..."
+echo ""
+echo "=========================================="
+echo "Post-scaffold: Initializing $PROJECT_NAME"
+echo "=========================================="
 echo "Working in: $(pwd)"
+echo ""
+
+# ===========================================
+# Phase 1: File cleanup and renaming
+# ===========================================
+echo "Phase 1: Cleaning up template files..."
+echo "-------------------------------------------"
 
 # Rename migration files with timestamp
 if [ "$ENABLE_DB" = "true" ] && [ -d "./internal/db/migrations" ]; then
@@ -52,16 +65,15 @@ if [ "$PROTO_TEMPLATE" = "simple" ]; then
         echo "Renamed: service.simple.go -> service.go"
     fi
 
-    # Rename game.simple.go to game.go in data layer (if exists)
-    if [ -f "./internal/data/game.simple.go" ] && [ ! -f "./internal/data/game.go" ]; then
-        mv "./internal/data/game.simple.go" "./internal/data/game.go"
-        echo "Renamed: game.simple.go -> game.go"
+    # Rename game.simple.go directly to ${PROJECT_NAME}.go
+    if [ -f "./internal/data/game.simple.go" ]; then
+        mv "./internal/data/game.simple.go" "./internal/data/${PROJECT_NAME}.go"
+        echo "Renamed: data/game.simple.go -> data/${PROJECT_NAME}.go"
     fi
 
-    # Rename game.simple.go to game.go in biz layer (if exists)
-    if [ -f "./internal/biz/game.simple.go" ] && [ ! -f "./internal/biz/game.go" ]; then
-        mv "./internal/biz/game.simple.go" "./internal/biz/game.go"
-        echo "Renamed: biz/game.simple.go -> biz/game.go"
+    if [ -f "./internal/biz/game.simple.go" ]; then
+        mv "./internal/biz/game.simple.go" "./internal/biz/${PROJECT_NAME}.go"
+        echo "Renamed: biz/game.simple.go -> biz/${PROJECT_NAME}.go"
     fi
 
 elif [ "$PROTO_TEMPLATE" = "full" ]; then
@@ -87,78 +99,128 @@ elif [ "$PROTO_TEMPLATE" = "full" ]; then
         echo "Renamed: service.full.go -> service.go"
     fi
 
-    # Rename game.full.go to game.go in data layer (if exists)
-    if [ -f "./internal/data/game.full.go" ] && [ ! -f "./internal/data/game.go" ]; then
-        mv "./internal/data/game.full.go" "./internal/data/game.go"
-        echo "Renamed: game.full.go -> game.go"
+    # Rename game.full.go directly to ${PROJECT_NAME}.go
+    if [ -f "./internal/data/game.full.go" ]; then
+        mv "./internal/data/game.full.go" "./internal/data/${PROJECT_NAME}.go"
+        echo "Renamed: data/game.full.go -> data/${PROJECT_NAME}.go"
     fi
 
-    # Rename game.full.go to game.go in biz layer (if exists)
-    if [ -f "./internal/biz/game.full.go" ] && [ ! -f "./internal/biz/game.go" ]; then
-        mv "./internal/biz/game.full.go" "./internal/biz/game.go"
-        echo "Renamed: biz/game.full.go -> biz/game.go"
+    if [ -f "./internal/biz/game.full.go" ]; then
+        mv "./internal/biz/game.full.go" "./internal/biz/${PROJECT_NAME}.go"
+        echo "Renamed: biz/game.full.go -> biz/${PROJECT_NAME}.go"
+    fi
+
+    if [ -f "./internal/tests/service/game_test.go" ]; then
+        mv "./internal/tests/service/game_test.go" "./internal/tests/service/${PROJECT_NAME}_test.go"
+        echo "Renamed: tests/game_test.go -> tests/${PROJECT_NAME}_test.go"
     fi
 fi
 
-# Auto-generate models with gentool if enabled
-if [ "$ENABLE_GEN_MODEL" = "true" ] && [ "$ORM_TYPE" = "gorm" ] && [ "$ENABLE_DB" = "true" ]; then
-    echo ""
-    echo "=========================================="
-    echo "Auto-generating GORM models from database"
-    echo "=========================================="
-    echo "Note: This requires database to be running and migrations applied."
-    echo ""
+echo "✓ File cleanup completed"
 
-    # Check if database is accessible
-    DB_TYPE=$(grep 'driver:' configs/db.yaml 2>/dev/null | awk '{print $2}')
+# ===========================================
+# Phase 2: Project initialization
+# ===========================================
+echo ""
+echo "Phase 2: Project initialization..."
+echo "-------------------------------------------"
 
-    if [ -z "$DB_TYPE" ]; then
-        echo "⚠️  Warning: Could not read database config from configs/db.yaml"
-        echo "   Please run the following commands manually:"
-        echo "   1. make init           - Install tools including gentool"
-        echo "   2. make gen-createdb   - Create database"
-        echo "   3. make gen-up         - Run migrations"
-        echo "   4. make gen-model      - Generate models"
+# Determine total steps based on configuration
+if [ "$ENABLE_DB" = "true" ]; then
+    if [ "$ENABLE_GEN_MODEL" = "true" ] && [ "$ORM_TYPE" = "gorm" ]; then
+        TOTAL_STEPS=5
     else
-        echo "1. Installing tools (including gentool)..."
-        if make init 2>&1 | grep -E "(Installing gentool|✓)"; then
-            echo "   ✓ Tools installed"
-        else
-            echo "   ⚠️  Tool installation may have warnings (check output above)"
-        fi
-
-        echo ""
-        echo "2. Creating database if not exists..."
-        if make gen-createdb 2>&1; then
-            echo "   ✓ Database ready"
-        else
-            echo "   ⚠️  Database creation failed or database already exists"
-        fi
-
-        echo ""
-        echo "3. Running migrations..."
-        if make gen-up 2>&1; then
-            echo "   ✓ Migrations applied"
-        else
-            echo "   ⚠️  Migration failed (may be already applied)"
-        fi
-
-        echo ""
-        echo "4. Generating models from database..."
-        if make gen-model 2>&1; then
-            echo "   ✓ Models generated successfully"
-            echo ""
-            echo "Generated models:"
-            ls -1 internal/data/model/*.gen.go 2>/dev/null | sed 's/^/     /' || echo "     (no .gen.go files found)"
-        else
-            echo "   ✗ Model generation failed"
-            echo "   Please check database connection and run 'make gen-model' manually"
-        fi
+        TOTAL_STEPS=4
     fi
-
-    echo ""
-    echo "=========================================="
+else
+    TOTAL_STEPS=2
 fi
 
-echo "Post-scaffold hook completed successfully"
+CURRENT_STEP=1
 
+echo ""
+echo "Step $CURRENT_STEP/$TOTAL_STEPS: Installing tools..."
+echo "-------------------------------------------"
+if make init; then
+    echo "✓ Tools installed"
+else
+    echo "✗ Tool installation failed"
+    FAILED_STEPS+=("make init")
+fi
+CURRENT_STEP=$((CURRENT_STEP + 1))
+
+# Database-related steps only if database is enabled
+if [ "$ENABLE_DB" = "true" ]; then
+    echo ""
+    echo "Step $CURRENT_STEP/$TOTAL_STEPS: Creating database..."
+    echo "-------------------------------------------"
+    if make gen-createdb; then
+        echo "✓ Database ready"
+    else
+        echo "⚠️  Database creation failed (may already exist or container not running)"
+        FAILED_STEPS+=("make gen-createdb")
+    fi
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+
+    echo ""
+    echo "Step $CURRENT_STEP/$TOTAL_STEPS: Running migrations..."
+    echo "-------------------------------------------"
+    if make gen-up; then
+        echo "✓ Migrations applied"
+    else
+        echo "⚠️  Migration failed"
+        FAILED_STEPS+=("make gen-up")
+    fi
+    CURRENT_STEP=$((CURRENT_STEP + 1))
+
+    # Generate models only if enabled and using gorm
+    if [ "$ENABLE_GEN_MODEL" = "true" ] && [ "$ORM_TYPE" = "gorm" ]; then
+        echo ""
+        echo "Step $CURRENT_STEP/$TOTAL_STEPS: Generating GORM models..."
+        echo "-------------------------------------------"
+        if make gen-model; then
+            echo "✓ Models generated"
+            echo "Generated models:"
+            ls -1 internal/data/model/*.gen.go 2>/dev/null | sed 's/^/  /' || echo "  (no .gen.go files found)"
+        else
+            echo "⚠️  Model generation failed"
+            FAILED_STEPS+=("make gen-model")
+        fi
+        CURRENT_STEP=$((CURRENT_STEP + 1))
+    fi
+fi
+
+echo ""
+echo "Step $CURRENT_STEP/$TOTAL_STEPS: Generating proto and building..."
+echo "-------------------------------------------"
+if make all; then
+    echo "✓ Build completed"
+else
+    echo "✗ Build failed"
+    FAILED_STEPS+=("make all")
+fi
+
+echo ""
+echo "=========================================="
+
+# Check if any steps failed
+if [ ${#FAILED_STEPS[@]} -gt 0 ]; then
+    echo "⚠️  Project $PROJECT_NAME created with warnings"
+    echo "=========================================="
+    echo ""
+    echo "Some steps had issues. You may need to run manually:"
+    echo ""
+    echo "  cd $PROJECT_DIR"
+    for step in "${FAILED_STEPS[@]}"; do
+        echo "  $step"
+    done
+    echo ""
+else
+    echo "✓ Project $PROJECT_NAME initialized successfully!"
+    echo "=========================================="
+    echo ""
+    echo "Next steps:"
+    echo "  cd $PROJECT_DIR"
+    echo "  make run     # Start the service"
+    echo ""
+fi

@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"strconv"
-	"strings"
 
-	"github.com/go-cinch/common/page/v2"
-	"github.com/go-cinch/common/proto/params"
+	"{{.Computed.common_module_final}}/copierx"
+	"{{.Computed.common_module_final}}/page/v2"
+	"{{.Computed.common_module_final}}/proto/params"
+	"{{.Computed.common_module_final}}/utils"
 	"github.com/google/wire"
 	"google.golang.org/protobuf/types/known/emptypb"
 {{- if .Computed.enable_trace_final }}
@@ -34,104 +34,79 @@ func New{{.Computed.service_name_capitalized}}Service(uc *biz.{{.Computed.servic
 }
 
 // Create{{.Computed.service_name_capitalized}} creates a new record.
-func (s *{{.Computed.service_name_capitalized}}Service) Create{{.Computed.service_name_capitalized}}(ctx context.Context, req *v1.Create{{.Computed.service_name_capitalized}}Request) (*emptypb.Empty, error) {
+func (s *{{.Computed.service_name_capitalized}}Service) Create{{.Computed.service_name_capitalized}}(ctx context.Context, req *v1.Create{{.Computed.service_name_capitalized}}Request) (rp *emptypb.Empty, err error) {
 	{{- if .Computed.enable_trace_final }}
-	tr := otel.Tracer("api")
+	tr := otel.Tracer("service")
 	ctx, span := tr.Start(ctx, "Create{{.Computed.service_name_capitalized}}")
 	defer span.End()
 	{{- end }}
-	item := &biz.Create{{.Computed.service_name_capitalized}}{}
-	item.Name = req.Name
-	err := s.uc.Create(ctx, item)
-	return &emptypb.Empty{}, err
+	rp = &emptypb.Empty{}
+	r := &biz.Create{{.Computed.service_name_capitalized}}{}
+	copierx.Copy(&r, req)
+	err = s.uc.Create(ctx, r)
+	return
 }
 
 // Get{{.Computed.service_name_capitalized}} gets a record by id.
-func (s *{{.Computed.service_name_capitalized}}Service) Get{{.Computed.service_name_capitalized}}(ctx context.Context, req *v1.Get{{.Computed.service_name_capitalized}}Request) (*v1.Get{{.Computed.service_name_capitalized}}Reply, error) {
+func (s *{{.Computed.service_name_capitalized}}Service) Get{{.Computed.service_name_capitalized}}(ctx context.Context, req *v1.Get{{.Computed.service_name_capitalized}}Request) (rp *v1.Get{{.Computed.service_name_capitalized}}Reply, err error) {
 	{{- if .Computed.enable_trace_final }}
-	tr := otel.Tracer("api")
+	tr := otel.Tracer("service")
 	ctx, span := tr.Start(ctx, "Get{{.Computed.service_name_capitalized}}")
 	defer span.End()
 	{{- end }}
-	item, err := s.uc.Get(ctx, req.Id)
+	rp = &v1.Get{{.Computed.service_name_capitalized}}Reply{}
+	res, err := s.uc.Get(ctx, req.Id)
 	if err != nil {
-		return nil, err
+		return
 	}
-	reply := &v1.Get{{.Computed.service_name_capitalized}}Reply{
-		Id:   item.ID,
-		Name: item.Name,
-	}
-	return reply, nil
+	copierx.Copy(&rp, res)
+	return
 }
 
 // Find{{.Computed.service_name_capitalized}} finds records by page.
-func (s *{{.Computed.service_name_capitalized}}Service) Find{{.Computed.service_name_capitalized}}(ctx context.Context, req *v1.Find{{.Computed.service_name_capitalized}}Request) (*v1.Find{{.Computed.service_name_capitalized}}Reply, error) {
+func (s *{{.Computed.service_name_capitalized}}Service) Find{{.Computed.service_name_capitalized}}(ctx context.Context, req *v1.Find{{.Computed.service_name_capitalized}}Request) (rp *v1.Find{{.Computed.service_name_capitalized}}Reply, err error) {
 	{{- if .Computed.enable_trace_final }}
-	tr := otel.Tracer("api")
+	tr := otel.Tracer("service")
 	ctx, span := tr.Start(ctx, "Find{{.Computed.service_name_capitalized}}")
 	defer span.End()
 	{{- end }}
-	condition := &biz.Find{{.Computed.service_name_capitalized}}{
-		Page: page.Page{
-			Num:     req.Page.Num,
-			Size:    req.Page.Size,
-			Disable: req.Page.Disable,
-		},
-		Name: req.Name,
-	}
-	items, err := s.uc.Find(ctx, condition)
+	rp = &v1.Find{{.Computed.service_name_capitalized}}Reply{}
+	rp.Page = &params.Page{}
+	r := &biz.Find{{.Computed.service_name_capitalized}}{}
+	r.Page = page.Page{}
+	copierx.Copy(&r, req)
+	copierx.Copy(&r.Page, req.Page)
+	res, err := s.uc.Find(ctx, r)
 	if err != nil {
-		return nil, err
+		return
 	}
-	reply := &v1.Find{{.Computed.service_name_capitalized}}Reply{
-		Page: &params.Page{
-			Num:     condition.Page.Num,
-			Size:    condition.Page.Size,
-			Total:   condition.Page.Total,
-			Disable: condition.Page.Disable,
-		},
-		List: make([]*v1.{{.Computed.service_name_capitalized}}Reply, 0, len(items)),
-	}
-	for _, item := range items {
-		reply.List = append(reply.List, &v1.{{.Computed.service_name_capitalized}}Reply{
-			Id:   item.ID,
-			Name: item.Name,
-		})
-	}
-	return reply, nil
+	copierx.Copy(&rp.Page, r.Page)
+	copierx.Copy(&rp.List, res)
+	return
 }
 
 // Update{{.Computed.service_name_capitalized}} updates a record by id.
-func (s *{{.Computed.service_name_capitalized}}Service) Update{{.Computed.service_name_capitalized}}(ctx context.Context, req *v1.Update{{.Computed.service_name_capitalized}}Request) (*emptypb.Empty, error) {
+func (s *{{.Computed.service_name_capitalized}}Service) Update{{.Computed.service_name_capitalized}}(ctx context.Context, req *v1.Update{{.Computed.service_name_capitalized}}Request) (rp *emptypb.Empty, err error) {
 	{{- if .Computed.enable_trace_final }}
-	tr := otel.Tracer("api")
+	tr := otel.Tracer("service")
 	ctx, span := tr.Start(ctx, "Update{{.Computed.service_name_capitalized}}")
 	defer span.End()
 	{{- end }}
-	item := &biz.Update{{.Computed.service_name_capitalized}}{
-		ID:   req.Id,
-		Name: req.Name,
-	}
-	err := s.uc.Update(ctx, item)
-	return &emptypb.Empty{}, err
+	rp = &emptypb.Empty{}
+	r := &biz.Update{{.Computed.service_name_capitalized}}{}
+	copierx.Copy(&r, req)
+	err = s.uc.Update(ctx, r)
+	return
 }
 
 // Delete{{.Computed.service_name_capitalized}} deletes records by ids.
-func (s *{{.Computed.service_name_capitalized}}Service) Delete{{.Computed.service_name_capitalized}}(ctx context.Context, req *params.IdsRequest) (*emptypb.Empty, error) {
+func (s *{{.Computed.service_name_capitalized}}Service) Delete{{.Computed.service_name_capitalized}}(ctx context.Context, req *params.IdsRequest) (rp *emptypb.Empty, err error) {
 	{{- if .Computed.enable_trace_final }}
-	tr := otel.Tracer("api")
+	tr := otel.Tracer("service")
 	ctx, span := tr.Start(ctx, "Delete{{.Computed.service_name_capitalized}}")
 	defer span.End()
 	{{- end }}
-	ids := make([]uint64, 0)
-	arr := strings.Split(req.Ids, ",")
-	for _, item := range arr {
-		id, err := strconv.ParseUint(strings.TrimSpace(item), 10, 64)
-		if err != nil {
-			continue
-		}
-		ids = append(ids, id)
-	}
-	err := s.uc.Delete(ctx, ids...)
-	return &emptypb.Empty{}, err
+	rp = &emptypb.Empty{}
+	err = s.uc.Delete(ctx, utils.Str2Uint64Arr(req.Ids)...)
+	return
 }

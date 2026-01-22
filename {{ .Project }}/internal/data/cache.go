@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/go-cinch/common/log"
-	"github.com/go-cinch/common/plugins/gorm/tenant/v2"
+	"{{.Computed.common_module_final}}/log"
+	"{{.Computed.common_module_final}}/plugins/gorm/tenant/v2"
 	"github.com/patrickmn/go-cache"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel"

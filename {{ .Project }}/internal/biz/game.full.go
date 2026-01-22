@@ -9,12 +9,12 @@ import (
 {{- end }}
 
 {{- if .Computed.enable_cache_final }}
-	"github.com/go-cinch/common/constant"
-	"github.com/go-cinch/common/copierx"
+	"{{.Computed.common_module_final}}/constant"
+	"{{.Computed.common_module_final}}/copierx"
 {{- end }}
-	"github.com/go-cinch/common/page/v2"
+	"{{.Computed.common_module_final}}/page/v2"
 {{- if .Computed.enable_cache_final }}
-	"github.com/go-cinch/common/utils"
+	"{{.Computed.common_module_final}}/utils"
 	"github.com/pkg/errors"
 {{- end }}
 
@@ -44,14 +44,6 @@ type Find{{ .Computed.service_name_capitalized }}Cache struct {
 type Update{{ .Computed.service_name_capitalized }} struct {
 	ID   uint64  `json:"id,string"`
 	Name *string `json:"name,omitempty"`
-}
-
-type {{ .Computed.service_name_capitalized }}Repo interface {
-	Create(ctx context.Context, item *Create{{ .Computed.service_name_capitalized }}) error
-	Get(ctx context.Context, id uint64) (*{{ .Computed.service_name_capitalized }}, error)
-	Find(ctx context.Context, condition *Find{{ .Computed.service_name_capitalized }}) []{{ .Computed.service_name_capitalized }}
-	Update(ctx context.Context, item *Update{{ .Computed.service_name_capitalized }}) error
-	Delete(ctx context.Context, ids ...uint64) error
 }
 
 type {{ .Computed.service_name_capitalized }}UseCase struct {

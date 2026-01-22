@@ -3,24 +3,24 @@ module {{.Computed.module_name_final}}
 go 1.25
 
 require (
-	github.com/go-cinch/common/log v1.2.0
-	github.com/go-cinch/common/proto/params v1.0.1
+	{{.Computed.common_module_final}}/log v1.2.0
+	{{.Computed.common_module_final}}/proto/params v1.0.1
 	{{- if .Computed.enable_reason_final }}
 	github.com/go-kratos/kratos/v2 v2.8.3
 	{{- else }}
 	github.com/go-kratos/kratos/v2 v2.8.3
 	{{- end }}
 	{{- if .Computed.enable_i18n_final }}
-	github.com/go-cinch/common/middleware/i18n v1.0.2
+	{{.Computed.common_module_final}}/middleware/i18n v1.0.6
 	{{- end }}
 	{{- if .Computed.enable_db_final }}
 	{{- if eq .Computed.orm_type_final "gorm" }}
-	github.com/go-cinch/common/id v1.0.6
-	github.com/go-cinch/common/plugins/gorm/tenant/v2 v2.0.2
-	github.com/go-cinch/common/middleware/tenant/v2 v2.0.1
-	github.com/go-cinch/common/copierx v1.0.4
-	github.com/go-cinch/common/constant v1.0.5
-	github.com/go-cinch/common/utils v1.0.5
+	{{.Computed.common_module_final}}/id v1.0.6
+	{{.Computed.common_module_final}}/plugins/gorm/tenant/v2 v2.0.2
+	{{.Computed.common_module_final}}/middleware/tenant/v2 v2.0.1
+	{{.Computed.common_module_final}}/copierx v1.0.4
+	{{.Computed.common_module_final}}/constant v1.0.5
+	{{.Computed.common_module_final}}/utils v1.0.5
 	gorm.io/gorm v1.31.1
 	{{- if eq .Computed.db_type_final "mysql" }}
 	gorm.io/driver/mysql v1.5.7

@@ -2,7 +2,7 @@
 server:
   # Machine ID for distributed ID generation (Sonyflake)
   # Each instance should have a unique machine_id (0-65535)
-  machine_id: ""
+  machineId: ""
 
   # HTTP server
   http:
