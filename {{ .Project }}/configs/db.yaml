@@ -2,7 +2,7 @@
 db:
   driver: {{ .Computed.db_type_final }}
 {{- if eq .Computed.db_type_final "postgres" }}
-  dsn: "host=localhost user=root password=password dbname={{ .Computed.service_name_final }} port=5432 sslmode=disable TimeZone=UTC"
+  dsn: "postgresql://root:password@127.0.0.1:5432/{{ .Computed.service_name_final }}?sslmode=disable&TimeZone=UTC"
 {{- else }}
   dsn: "root:root@tcp(localhost:3306)/{{ .Computed.service_name_final }}?charset=utf8mb4&parseTime=True&loc=Local"
 {{- end }}
@@ -25,14 +25,15 @@ db:
       # Requires: github.com/golang-module/carbon/v2
       useCarbonTime: true
 
-      # Use uint64 for ID fields (default: int64)
-      useUint64Id: true
-
       # Add ",string" to JSON tags for specific fields (for JavaScript compatibility)
-      # Serializes uint64/int64 as string to avoid precision loss
-      # Example: ["id", "userId", "orderId"]
-      jsonStringFields:
-        - id
+      # Serializes int64 as string to avoid precision loss
+      # Format:
+      #   - field_name           # Global: applies to all tables
+      #   - table_name.field_name # Table-specific: only applies to specified table
+      # Example:
+      #   - id                   # All tables' id field
+      #   - order.order_id       # Only order table's order_id field
+      jsonStringFields: []
 
       # Remove pointer (*) from nullable fields
       # Warning: NULL values will be zero values (0, "", false, etc.)
