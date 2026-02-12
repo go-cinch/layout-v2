@@ -21,6 +21,6 @@ type {{ .Computed.service_name_capitalized }} struct {
 
 // TableName overrides the table name
 func ({{ .Computed.service_name_capitalized }}) TableName() string {
-	return "t_{{ .Computed.service_name_final }}"
+	return "t_{{ .Computed.service_name_snake }}"
 }
 {{ end }}

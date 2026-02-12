@@ -154,10 +154,12 @@ questions:
 computed:
   # Use provided value, fallback to Project if not provided
   service_name_final: '{{ or .Scaffold.service_name .Scaffold.Project }}'
+  service_name_snake: '{{ toSnakeCase (or .Scaffold.service_name .Scaffold.Project) }}'
+  service_name_camel: '{{ toCamelCase (or .Scaffold.service_name .Scaffold.Project) }}'
   service_name_capitalized: '{{ toPascalCase (or .Scaffold.service_name .Scaffold.Project) }}'
   module_name_final: '{{ or .Scaffold.module_name .Scaffold.service_name .Scaffold.Project }}'
   common_module_final: '{{ or .Scaffold.common_module "github.com/go-cinch/common" }}'
-  # Middlewares: convert array ["tenant","header"] to string "tenant,header"
+  # Middlewares: convert array ["header"] to string "header"
   # Try multiple strategies: check if slice/array using typeOf or printf, fallback to string
   # In --no-prompt mode without middlewares param, use default "header"
   middlewares_final: '{{ $m := .Scaffold.middlewares }}{{ if not $m }}header{{ else }}{{ $t := printf "%T" $m }}{{ if or (hasPrefix $t "[]") (eq $t "[]interface {}") }}{{ $m | join "," }}{{ else }}{{ $m }}{{ end }}{{ end }}'
@@ -224,19 +226,19 @@ features:
       - "**/internal/service/service.simple.go"
   - value: '{{ and .Computed.enable_db_final (eq .Scaffold.proto_template "simple") }}'
     globs:
-      - "**/internal/data/game.simple.go"
-      - "**/internal/biz/game.simple.go"
+      - "**/internal/data/*.simple.go"
+      - "**/internal/biz/*.simple.go"
   - value: '{{ eq .Scaffold.proto_template "full" }}'
     globs:
       - "**/api/*-proto/*.full.proto"
       - "**/internal/service/service.full.go"
   - value: '{{ and .Computed.enable_db_final (eq .Scaffold.proto_template "full") }}'
     globs:
-      - "**/internal/data/game.full.go"
-      - "**/internal/biz/game.full.go"
+      - "**/internal/data/*.full.go"
+      - "**/internal/biz/*.full.go"
   - value: '{{ and .Computed.enable_db_final (eq .Computed.orm_type_final "gorm") (not .Computed.enable_gen_model_final) }}'
     globs:
-      - "**/internal/data/model/game.go"
+      - "**/internal/data/model/*.go"
   - value: true
     globs:
       - "**/internal/biz/biz.go"

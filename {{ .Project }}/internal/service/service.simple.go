@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel"
 {{- end }}
 
-	v1 "{{.Computed.module_name_final}}/api/{{.Computed.service_name_final}}"
+	v1 "{{.Computed.module_name_final}}/api/{{.Computed.service_name_snake}}"
 )
 
 // ProviderSet is service providers.

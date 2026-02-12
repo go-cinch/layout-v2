@@ -4,6 +4,7 @@
 set -e
 
 PROJECT_NAME="{{ .Computed.service_name_final }}"
+SERVICE_NAME_SNAKE="{{ .Computed.service_name_snake }}"
 PROTO_TEMPLATE="{{ .Scaffold.proto_template }}"
 PROJECT_DIR="{{ .Project }}"
 ENABLE_DB="{{ .Computed.enable_db_final }}"
@@ -46,8 +47,8 @@ if [ "$PROTO_TEMPLATE" = "simple" ]; then
     # Remove .full files
     find ./api -type f -name "*.full.proto" -delete 2>/dev/null || true
     find ./internal/service -type f -name "service.full.go" -delete 2>/dev/null || true
-    find ./internal/data -type f -name "game.full.go" -delete 2>/dev/null || true
-    find ./internal/biz -type f -name "game.full.go" -delete 2>/dev/null || true
+    find ./internal/data -type f -name "*.full.go" -delete 2>/dev/null || true
+    find ./internal/biz -type f -name "*.full.go" -delete 2>/dev/null || true
     echo "Removed .full template files"
 
     # Rename .simple.proto to .proto (if any exist)
@@ -65,23 +66,23 @@ if [ "$PROTO_TEMPLATE" = "simple" ]; then
         echo "Renamed: service.simple.go -> service.go"
     fi
 
-    # Rename game.simple.go directly to ${PROJECT_NAME}.go
-    if [ -f "./internal/data/game.simple.go" ]; then
-        mv "./internal/data/game.simple.go" "./internal/data/${PROJECT_NAME}.go"
-        echo "Renamed: data/game.simple.go -> data/${PROJECT_NAME}.go"
+    # Rename ${SERVICE_NAME_SNAKE}.simple.go to ${SERVICE_NAME_SNAKE}.go
+    if [ -f "./internal/data/${SERVICE_NAME_SNAKE}.simple.go" ]; then
+        mv "./internal/data/${SERVICE_NAME_SNAKE}.simple.go" "./internal/data/${SERVICE_NAME_SNAKE}.go"
+        echo "Renamed: data/${SERVICE_NAME_SNAKE}.simple.go -> data/${SERVICE_NAME_SNAKE}.go"
     fi
 
-    if [ -f "./internal/biz/game.simple.go" ]; then
-        mv "./internal/biz/game.simple.go" "./internal/biz/${PROJECT_NAME}.go"
-        echo "Renamed: biz/game.simple.go -> biz/${PROJECT_NAME}.go"
+    if [ -f "./internal/biz/${SERVICE_NAME_SNAKE}.simple.go" ]; then
+        mv "./internal/biz/${SERVICE_NAME_SNAKE}.simple.go" "./internal/biz/${SERVICE_NAME_SNAKE}.go"
+        echo "Renamed: biz/${SERVICE_NAME_SNAKE}.simple.go -> biz/${SERVICE_NAME_SNAKE}.go"
     fi
 
 elif [ "$PROTO_TEMPLATE" = "full" ]; then
     # Remove .simple files
     find ./api -type f -name "*.simple.proto" -delete 2>/dev/null || true
     find ./internal/service -type f -name "service.simple.go" -delete 2>/dev/null || true
-    find ./internal/data -type f -name "game.simple.go" -delete 2>/dev/null || true
-    find ./internal/biz -type f -name "game.simple.go" -delete 2>/dev/null || true
+    find ./internal/data -type f -name "*.simple.go" -delete 2>/dev/null || true
+    find ./internal/biz -type f -name "*.simple.go" -delete 2>/dev/null || true
     echo "Removed .simple template files"
 
     # Rename .full.proto to .proto (if any exist)
@@ -99,20 +100,15 @@ elif [ "$PROTO_TEMPLATE" = "full" ]; then
         echo "Renamed: service.full.go -> service.go"
     fi
 
-    # Rename game.full.go directly to ${PROJECT_NAME}.go
-    if [ -f "./internal/data/game.full.go" ]; then
-        mv "./internal/data/game.full.go" "./internal/data/${PROJECT_NAME}.go"
-        echo "Renamed: data/game.full.go -> data/${PROJECT_NAME}.go"
+    # Rename ${SERVICE_NAME_SNAKE}.full.go to ${SERVICE_NAME_SNAKE}.go
+    if [ -f "./internal/data/${SERVICE_NAME_SNAKE}.full.go" ]; then
+        mv "./internal/data/${SERVICE_NAME_SNAKE}.full.go" "./internal/data/${SERVICE_NAME_SNAKE}.go"
+        echo "Renamed: data/${SERVICE_NAME_SNAKE}.full.go -> data/${SERVICE_NAME_SNAKE}.go"
     fi
 
-    if [ -f "./internal/biz/game.full.go" ]; then
-        mv "./internal/biz/game.full.go" "./internal/biz/${PROJECT_NAME}.go"
-        echo "Renamed: biz/game.full.go -> biz/${PROJECT_NAME}.go"
-    fi
-
-    if [ -f "./internal/tests/service/game_test.go" ]; then
-        mv "./internal/tests/service/game_test.go" "./internal/tests/service/${PROJECT_NAME}_test.go"
-        echo "Renamed: tests/game_test.go -> tests/${PROJECT_NAME}_test.go"
+    if [ -f "./internal/biz/${SERVICE_NAME_SNAKE}.full.go" ]; then
+        mv "./internal/biz/${SERVICE_NAME_SNAKE}.full.go" "./internal/biz/${SERVICE_NAME_SNAKE}.go"
+        echo "Renamed: biz/${SERVICE_NAME_SNAKE}.full.go -> biz/${SERVICE_NAME_SNAKE}.go"
     fi
 fi
 

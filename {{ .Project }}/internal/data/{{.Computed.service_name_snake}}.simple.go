@@ -21,12 +21,12 @@ import (
 {{- end }}
 )
 
-type {{ .Computed.service_name_final }}Repo struct {
+type {{ .Computed.service_name_camel }}Repo struct {
 	data *Data
 }
 
 func New{{ .Computed.service_name_capitalized }}Repo(data *Data) biz.{{ .Computed.service_name_capitalized }}Repo {
-	return &{{ .Computed.service_name_final }}Repo{
+	return &{{ .Computed.service_name_camel }}Repo{
 		data: data,
 	}
 }
@@ -34,9 +34,9 @@ func New{{ .Computed.service_name_capitalized }}Repo(data *Data) biz.{{ .Compute
 
 {{ if eq .Computed.db_type_final "postgres" }}
 // Get retrieves a record by ID using raw SQL queries.
-func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
-	query := "SELECT id, name FROM {{ .Computed.service_name_final }} WHERE id = $1"
+	query := "SELECT id, name FROM {{ .Computed.service_name_snake }} WHERE id = $1"
 	err = ro.data.DB.QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
 	if err == sql.ErrNoRows {
 		err = biz.ErrRecordNotFound(ctx)
@@ -49,9 +49,9 @@ func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uin
 }
 {{ else }}
 // Get retrieves a record by ID using raw SQL queries.
-func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
-	query := "SELECT id, name FROM {{ .Computed.service_name_final }} WHERE id = ?"
+	query := "SELECT id, name FROM {{ .Computed.service_name_snake }} WHERE id = ?"
 	err = ro.data.DB.QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
 	if err == sql.ErrNoRows {
 		err = biz.ErrRecordNotFound(ctx)
@@ -66,7 +66,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uin
 {{- else if eq .Computed.orm_type_final "gorm" }}
 
 // Get retrieves a record by ID using GORM Generics.
-func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
 	m, err := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx)).Where("id = ?", id).First(ctx)
 	if err == gorm.ErrRecordNotFound {

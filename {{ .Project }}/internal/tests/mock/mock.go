@@ -183,7 +183,7 @@ func MySQLAndRedis() *conf.Bootstrap {
 		},
 		Db: &conf.DB{
 			Driver:  "mysql",
-			Dsn:     fmt.Sprintf("root:password@tcp(%s)/{{ .Computed.service_name_final }}?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local&timeout=10000ms", net.JoinHostPort(host1, fmt.Sprintf("%d", port1))),
+			Dsn:     fmt.Sprintf("root:password@tcp(%s)/{{ .Computed.service_name_snake }}?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local&timeout=10000ms", net.JoinHostPort(host1, fmt.Sprintf("%d", port1))),
 			Migrate: false,
 		},
 {{- if .Computed.enable_redis_final }}
@@ -222,7 +222,7 @@ func PostgreSQLAndRedis() *conf.Bootstrap {
 		},
 		Db: &conf.DB{
 			Driver:  "postgres",
-			Dsn:     fmt.Sprintf("host=%s user=root password=password dbname={{ .Computed.service_name_final }} port=%d sslmode=disable TimeZone=UTC", host1, port1),
+			Dsn:     fmt.Sprintf("host=%s user=root password=password dbname={{ .Computed.service_name_snake }} port=%d sslmode=disable TimeZone=UTC", host1, port1),
 			Migrate: false,
 		},
 {{- if .Computed.enable_redis_final }}

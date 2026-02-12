@@ -515,7 +515,7 @@ All service tests **must** use `mock.XxxService()` to create the service instanc
 // Good - use mock.XxxService() to create service instance
 func TestFindGame(t *testing.T) {
     s := mock.GameService()
-    ctx := mock.NewContextWithUserId(context.Background(), "test-tenant")
+    ctx := mock.NewContextWithUserId(context.Background(), "test-user")
 
     req := &v1.FindGameRequest{
         Page: &params.Page{
@@ -532,7 +532,7 @@ func TestFindGame(t *testing.T) {
 
 func TestCreateGame(t *testing.T) {
     s := mock.GameService()
-    ctx := mock.NewContextWithUserId(context.Background(), "test-tenant")
+    ctx := mock.NewContextWithUserId(context.Background(), "test-user")
 
     name := "test-game"
     req := &v1.CreateGameRequest{
@@ -568,25 +568,25 @@ import (
 
 func TestCreateGame(t *testing.T) {
     s := mock.GameService()
-    ctx := mock.NewContextWithUserId(context.Background(), "test-tenant")
+    ctx := mock.NewContextWithUserId(context.Background(), "test-user")
     // test implementation...
 }
 
 func TestFindGame(t *testing.T) {
     s := mock.GameService()
-    ctx := mock.NewContextWithUserId(context.Background(), "test-tenant")
+    ctx := mock.NewContextWithUserId(context.Background(), "test-user")
     // test implementation...
 }
 
 func TestUpdateGame(t *testing.T) {
     s := mock.GameService()
-    ctx := mock.NewContextWithUserId(context.Background(), "test-tenant")
+    ctx := mock.NewContextWithUserId(context.Background(), "test-user")
     // test implementation...
 }
 
 func TestDeleteGame(t *testing.T) {
     s := mock.GameService()
-    ctx := mock.NewContextWithUserId(context.Background(), "test-tenant")
+    ctx := mock.NewContextWithUserId(context.Background(), "test-user")
     // test implementation...
 }
 ```
@@ -594,7 +594,7 @@ func TestDeleteGame(t *testing.T) {
 **Key Points:**
 - Every service method must have a corresponding `Test<MethodName>` function
 - Always use `mock.XxxService()` to create the service instance
-- Always use `mock.NewContextWithUserId()` to create context with tenant ID
+- Always use `mock.NewContextWithUserId()` to create context with user ID
 - Use `github.com/stretchr/testify/assert` for assertions
 - Test files are in `internal/tests/service/`, not alongside service files
 

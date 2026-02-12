@@ -1,14 +1,14 @@
 SHELL := /usr/bin/env bash
 
 .PHONY: default
-# generate a payment service with default preset
+# generate a payment-service service with default preset
 default:
-	scaffold new $(PWD) --no-prompt --preset default --run-hooks=always Project=payment
+	scaffold new $(PWD) --no-prompt --preset default --run-hooks=always Project=payment-service
 
 .PHONY: clean
-# clean generated payment directory
+# clean generated payment-service directory
 clean:
-	rm -rf payment
+	rm -rf payment-service
 
 .PHONY: help
 # show help

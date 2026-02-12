@@ -7,13 +7,6 @@ import (
 	"strconv"
 	"strings"
 
-	"{{.Computed.common_module_final}}/log"
-	"{{.Computed.common_module_final}}/log/caller"
-	"{{.Computed.common_module_final}}/plugins/k8s/pod"
-	"{{.Computed.common_module_final}}/plugins/kratos/config/env"
-	_ "{{.Computed.common_module_final}}/plugins/kratos/encoding/yml"
-	_ "{{.Computed.common_module_final}}/proto/params"
-	"{{.Computed.common_module_final}}/utils"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
 	"github.com/go-kratos/kratos/v2/config/file"
@@ -22,6 +15,13 @@ import (
 	"github.com/go-kratos/kratos/v2/transport/http"
 	_ "github.com/google/gnostic/openapiv3"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
+	"{{.Computed.common_module_final}}/log"
+	"{{.Computed.common_module_final}}/log/caller"
+	"{{.Computed.common_module_final}}/plugins/k8s/pod"
+	"{{.Computed.common_module_final}}/plugins/kratos/config/env"
+	_ "{{.Computed.common_module_final}}/plugins/kratos/encoding/yml"
+	_ "{{.Computed.common_module_final}}/proto/params"
+	"{{.Computed.common_module_final}}/utils"
 
 	"{{.Computed.module_name_final}}/internal/conf"
 )

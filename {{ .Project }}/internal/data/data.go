@@ -104,7 +104,7 @@ import (
 	"{{.Computed.common_module_final}}/utils"
 {{- end }}
 	glog "{{.Computed.common_module_final}}/plugins/gorm/log"
-	"{{.Computed.common_module_final}}/plugins/gorm/tenant/v2"
+	"{{.Computed.common_module_final}}/plugins/gorm/migrate/v2"
 {{- if .Computed.enable_redis_final }}
 	"github.com/redis/go-redis/v9"
 {{- end }}
@@ -120,13 +120,13 @@ import (
 
 // Data wraps all data sources used by the service.
 type Data struct {
-	Tenant    *tenant.Tenant
-	sonyflake *id.Sonyflake
+	gormMigrate *migrate.Migrate
+	sonyflake   *id.Sonyflake
 }
 
-// NewData initializes the configured database connection via tenant v2.
+// NewData initializes the configured database connection via migrate v2.
 func NewData(c *conf.Bootstrap) (*Data, func(), error) {
-	gormTenant, err := NewDB(c)
+	gormMigrate, err := NewDB(c)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -141,14 +141,14 @@ func NewData(c *conf.Bootstrap) (*Data, func(), error) {
 	}
 
 	return &Data{
-		Tenant:    gormTenant,
-		sonyflake: sonyflake,
+		gormMigrate: gormMigrate,
+		sonyflake:   sonyflake,
 	}, cleanup, nil
 }
 
-// NewDB initializes tenant-aware database connection using tenant v2 package.
+// NewDB initializes database connection using migrate v2 package.
 // Supports both MySQL and PostgreSQL via internal driver detection.
-func NewDB(c *conf.Bootstrap) (*tenant.Tenant, error) {
+func NewDB(c *conf.Bootstrap) (*migrate.Migrate, error) {
 	if c == nil || c.Db == nil {
 		err := errors.New("db config is required")
 		log.WithError(err).Error("initialize db failed")
@@ -175,13 +175,13 @@ func NewDB(c *conf.Bootstrap) (*tenant.Tenant, error) {
 		level = log.WarnLevel
 	}
 
-	ops := []func(*tenant.Options){
-		tenant.WithDriver(driver),
-		tenant.WithDSN("", dsn), // Empty string for default tenant
-		tenant.WithSQLFile(db.SQLFiles),
-		tenant.WithSQLRoot(db.SQLRoot),
-		tenant.WithSkipMigrate(!dbConf.Migrate), // Skip migration if Migrate is false
-		tenant.WithConfig(&gorm.Config{
+	ops := []func(*migrate.Options){
+		migrate.WithDriver(driver),
+		migrate.WithDSN(dsn),
+		migrate.WithSQLFile(db.SQLFiles),
+		migrate.WithSQLRoot(db.SQLRoot),
+		migrate.WithSkipMigrate(!dbConf.Migrate), // Skip migration if Migrate is false
+		migrate.WithConfig(&gorm.Config{
 			NamingStrategy: schema.NamingStrategy{
 				SingularTable: true,
 			},
@@ -192,45 +192,45 @@ func NewDB(c *conf.Bootstrap) (*tenant.Tenant, error) {
 				glog.WithLevel(level),
 			),
 		}),
-		tenant.WithMaxIdle(10),
-		tenant.WithMaxOpen(100),
+		migrate.WithMaxIdle(10),
+		migrate.WithMaxOpen(100),
 	}
 
-	gormTenant, err := tenant.New(ops...)
+	gormMigrate, err := migrate.New(ops...)
 	if err != nil {
-		log.WithError(err).Error("create tenant failed")
+		log.WithError(err).Error("create migrate failed")
 		return nil, err
 	}
 
 	// Always call Migrate() to initialize the database connection
 	// WithSkipMigrate controls whether SQL migrations are actually executed
-	if err := gormTenant.Migrate(); err != nil {
-		log.WithError(err).Error("migrate tenant failed")
+	if err := gormMigrate.Migrate(); err != nil {
+		log.WithError(err).Error("migrate failed")
 		return nil, err
 	}
 
 	log.Info("initialize db success, driver: %s", driver)
-	return gormTenant, nil
+	return gormMigrate, nil
 }
 
 type contextTxKey struct{}
 
 // Tx is transaction wrapper.
 func (d *Data) Tx(ctx context.Context, handler func(ctx context.Context) error) error {
-	return d.Tenant.DB(ctx).Transaction(func(tx *gorm.DB) error {
+	return d.gormMigrate.DB(ctx).Transaction(func(tx *gorm.DB) error {
 		ctx = context.WithValue(ctx, contextTxKey{}, tx)
 		return handler(ctx)
 	})
 }
 
-// DB returns a tenant-aware GORM DB instance from context.
+// DB returns a GORM DB instance from context.
 // If a transaction is present in the context, it returns the transaction DB.
 func (d *Data) DB(ctx context.Context) *gorm.DB {
 	tx, ok := ctx.Value(contextTxKey{}).(*gorm.DB)
 	if ok {
 		return tx
 	}
-	return d.Tenant.DB(ctx)
+	return d.gormMigrate.DB(ctx)
 }
 
 {{- if .Computed.enable_biz_tx_final }}

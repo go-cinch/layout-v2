@@ -145,24 +145,24 @@ wire:
 # create database (only needed once)
 gen-createdb:
 {{- if eq .Computed.db_type_final "postgres" }}
-	@echo "Creating PostgreSQL database {{ .Computed.service_name_final }}..."
+	@echo "Creating PostgreSQL database {{ .Computed.service_name_snake }}..."
 	@if docker ps --filter "name=pg" --format "{{ print "{{" }}.Names{{ print "}}" }}" | grep -q "^pg$$"; then \
 		echo "Found running PostgreSQL container: pg"; \
 		PG_USER=$$(grep 'dsn:' configs/db.yaml | sed 's|.*postgresql://\([^:]*\):.*|\1|'); \
 		PG_PASSWORD=$$(grep 'dsn:' configs/db.yaml | sed 's|.*postgresql://[^:]*:\([^@]*\)@.*|\1|'); \
 		echo "Using PostgreSQL user: $$PG_USER"; \
-		docker exec -e PGPASSWORD=$$PG_PASSWORD pg psql -U $$PG_USER -d postgres -c "CREATE DATABASE {{ .Computed.service_name_final }};" 2>&1 | grep -v "already exists" || true; \
-		echo "✓ Database '{{ .Computed.service_name_final }}' is ready"; \
+		docker exec -e PGPASSWORD=$$PG_PASSWORD pg psql -U $$PG_USER -d postgres -c "CREATE DATABASE {{ .Computed.service_name_snake }};" 2>&1 | grep -v "already exists" || true; \
+		echo "✓ Database '{{ .Computed.service_name_snake }}' is ready"; \
 	fi
 {{- else }}
-	@echo "Creating MySQL database {{ .Computed.service_name_final }}..."
+	@echo "Creating MySQL database {{ .Computed.service_name_snake }}..."
 	@if docker ps --filter "name=mysql" --format "{{ print "{{" }}.Names{{ print "}}" }}" | grep -q "^mysql$$"; then \
 		echo "Found running MySQL container: mysql"; \
 		MYSQL_USER=$$(grep 'dsn:' configs/db.yaml | grep -v '#' | sed 's/.*dsn: *"\([^:]*\):.*/\1/'); \
 		MYSQL_PASSWORD=$$(grep 'dsn:' configs/db.yaml | grep -v '#' | sed 's/.*dsn: *"[^:]*:\([^@]*\)@.*/\1/'); \
 		echo "Using MySQL user: $$MYSQL_USER"; \
-		docker exec mysql mysql -u$$MYSQL_USER -p$$MYSQL_PASSWORD -e "CREATE DATABASE IF NOT EXISTS {{ .Computed.service_name_final }};" 2>&1 | grep -v "already exists" || true; \
-		echo "✓ Database '{{ .Computed.service_name_final }}' is ready"; \
+		docker exec mysql mysql -u$$MYSQL_USER -p$$MYSQL_PASSWORD -e "CREATE DATABASE IF NOT EXISTS {{ .Computed.service_name_snake }};" 2>&1 | grep -v "already exists" || true; \
+		echo "✓ Database '{{ .Computed.service_name_snake }}' is ready"; \
 	fi
 {{- end }}
 

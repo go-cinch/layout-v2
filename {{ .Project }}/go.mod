@@ -1,6 +1,6 @@
 module {{.Computed.module_name_final}}
 
-go 1.25
+go 1.26
 
 require (
 	{{.Computed.common_module_final}}/log v1.2.0
@@ -16,8 +16,7 @@ require (
 	{{- if .Computed.enable_db_final }}
 	{{- if eq .Computed.orm_type_final "gorm" }}
 	{{.Computed.common_module_final}}/id v1.0.6
-	{{.Computed.common_module_final}}/plugins/gorm/tenant/v2 v2.0.2
-	{{.Computed.common_module_final}}/middleware/tenant/v2 v2.0.1
+	{{.Computed.common_module_final}}/plugins/gorm/migrate/v2 v2.0.2
 	{{.Computed.common_module_final}}/copierx v1.0.4
 	{{.Computed.common_module_final}}/constant v1.0.5
 	{{.Computed.common_module_final}}/utils v1.0.5

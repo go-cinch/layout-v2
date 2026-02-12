@@ -9,7 +9,7 @@ import (
 
 	"github.com/bsm/redislock"
 	"{{.Computed.common_module_final}}/log"
-	"{{.Computed.common_module_final}}/plugins/gorm/tenant/v2"
+
 	"github.com/patrickmn/go-cache"
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel"
@@ -427,8 +427,6 @@ func randSeconds(minVal, maxVal int64) int64 {
 }
 
 func (c *Cache) getPrefixKey(ctx context.Context, arr ...string) string {
-	id := tenant.FromContext(ctx)
-
 	// Build base prefix; when additional segments provided, include value namespace (c.val)
 	var prefix string
 	if len(arr) > 0 {
@@ -450,24 +448,13 @@ func (c *Cache) getPrefixKey(ctx context.Context, arr ...string) string {
 		prefix = prefix + "*"
 	}
 
-	if id == "" {
-		return prefix
-	}
-	return id + "_" + prefix
+	return prefix
 }
 
 func (c *Cache) getValKey(ctx context.Context, action string) string {
-	id := tenant.FromContext(ctx)
-	if id == "" {
-		return strings.Join([]string{c.prefix, c.val, action}, "_")
-	}
-	return strings.Join([]string{id, c.prefix, c.val, action}, "_")
+	return strings.Join([]string{c.prefix, c.val, action}, "_")
 }
 
 func (c *Cache) getLockKey(ctx context.Context, action string) string {
-	id := tenant.FromContext(ctx)
-	if id == "" {
-		return strings.Join([]string{c.prefix, c.lock, action}, "_")
-	}
-	return strings.Join([]string{id, c.prefix, c.lock, action}, "_")
+	return strings.Join([]string{c.prefix, c.lock, action}, "_")
 }

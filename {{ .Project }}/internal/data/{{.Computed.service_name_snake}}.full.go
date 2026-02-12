@@ -38,22 +38,22 @@ var ProviderSet = wire.NewSet(
 	New{{ .Computed.service_name_capitalized }}Repo,
 )
 
-type {{ .Computed.service_name_final }}Repo struct {
+type {{ .Computed.service_name_camel }}Repo struct {
 	data *Data
 }
 
 func New{{ .Computed.service_name_capitalized }}Repo(data *Data) biz.{{ .Computed.service_name_capitalized }}Repo {
-	return &{{ .Computed.service_name_final }}Repo{
+	return &{{ .Computed.service_name_camel }}Repo{
 		data: data,
 	}
 }
 {{- if eq .Computed.orm_type_final "none" }}
 
 {{ if eq .Computed.db_type_final "postgres" }}
-func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
 	// Check if name exists
 	var count int
-	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_final }} WHERE name = $1"
+	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE name = $1"
 	err = ro.data.DB.QueryRowContext(ctx, checkSQL, item.Name).Scan(&count)
 	if err != nil {
 		log.WithContext(ctx).WithError(err).Error("check name exists failed")
@@ -64,7 +64,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 		return
 	}
 
-	insertSQL := "INSERT INTO {{ .Computed.service_name_final }} (id, name, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())"
+	insertSQL := "INSERT INTO {{ .Computed.service_name_snake }} (id, name, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())"
 	if item.ID == 0 {
 		item.ID = ro.data.ID(ctx)
 	}
@@ -75,9 +75,9 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 	return
 }
 
-func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
-	query := "SELECT id, name FROM {{ .Computed.service_name_final }} WHERE id = $1"
+	query := "SELECT id, name FROM {{ .Computed.service_name_snake }} WHERE id = $1"
 	err = ro.data.DB.QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
 	if err == sql.ErrNoRows {
 		err = biz.ErrRecordNotFound(ctx)
@@ -89,10 +89,10 @@ func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uin
 	return
 }
 {{ else }}
-func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
 	// Check if name exists
 	var count int
-	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_final }} WHERE name = ?"
+	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE name = ?"
 	err = ro.data.DB.QueryRowContext(ctx, checkSQL, item.Name).Scan(&count)
 	if err != nil {
 		log.WithContext(ctx).WithError(err).Error("check name exists failed")
@@ -103,7 +103,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 		return
 	}
 
-	insertSQL := "INSERT INTO {{ .Computed.service_name_final }} (id, name, created_at, updated_at) VALUES (?, ?, NOW(), NOW())"
+	insertSQL := "INSERT INTO {{ .Computed.service_name_snake }} (id, name, created_at, updated_at) VALUES (?, ?, NOW(), NOW())"
 	if item.ID == 0 {
 		item.ID = ro.data.ID(ctx)
 	}
@@ -114,9 +114,9 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 	return
 }
 
-func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
-	query := "SELECT id, name FROM {{ .Computed.service_name_final }} WHERE id = ?"
+	query := "SELECT id, name FROM {{ .Computed.service_name_snake }} WHERE id = ?"
 	err = ro.data.DB.QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
 	if err == sql.ErrNoRows {
 		err = biz.ErrRecordNotFound(ctx)
@@ -129,12 +129,12 @@ func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uin
 }
 {{ end }}
 
-func (ro {{ .Computed.service_name_final }}Repo) Find(ctx context.Context, condition *biz.Find{{ .Computed.service_name_capitalized }}) (rp []biz.{{ .Computed.service_name_capitalized }}) {
+func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condition *biz.Find{{ .Computed.service_name_capitalized }}) (rp []biz.{{ .Computed.service_name_capitalized }}) {
 	rp = make([]biz.{{ .Computed.service_name_capitalized }}, 0)
 
 	// Get total count for pagination first
 	if !condition.Page.Disable {
-		countQuery := "SELECT COUNT(*) FROM {{ .Computed.service_name_final }} WHERE 1=1"
+		countQuery := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE 1=1"
 		countArgs := make([]interface{}, 0)
 		if condition.Name != nil {
 			countQuery += " AND name LIKE ?"
@@ -150,7 +150,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Find(ctx context.Context, condi
 		}
 	}
 
-	query := "SELECT id, name FROM {{ .Computed.service_name_final }} WHERE 1=1"
+	query := "SELECT id, name FROM {{ .Computed.service_name_snake }} WHERE 1=1"
 	args := make([]interface{}, 0)
 
 	if condition.Name != nil {
@@ -185,10 +185,10 @@ func (ro {{ .Computed.service_name_final }}Repo) Find(ctx context.Context, condi
 	return
 }
 
-func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, item *biz.Update{{ .Computed.service_name_capitalized }}) (err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, item *biz.Update{{ .Computed.service_name_capitalized }}) (err error) {
 	// Check if record exists
 	var exists int
-	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_final }} WHERE id = ?"
+	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE id = ?"
 	err = ro.data.DB.QueryRowContext(ctx, checkSQL, item.ID).Scan(&exists)
 	if err != nil {
 		log.WithContext(ctx).WithError(err).Error("check {{ .Computed.service_name_final }} exists failed")
@@ -202,7 +202,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 	// Check name uniqueness if updating name
 	if item.Name != nil {
 		var count int
-		nameCheckSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_final }} WHERE name = ? AND id != ?"
+		nameCheckSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE name = ? AND id != ?"
 		err = ro.data.DB.QueryRowContext(ctx, nameCheckSQL, *item.Name, item.ID).Scan(&count)
 		if err != nil {
 			log.WithContext(ctx).WithError(err).Error("check name uniqueness failed")
@@ -214,7 +214,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 		}
 	}
 
-	updateSQL := "UPDATE {{ .Computed.service_name_final }} SET updated_at = NOW()"
+	updateSQL := "UPDATE {{ .Computed.service_name_snake }} SET updated_at = NOW()"
 	args := make([]interface{}, 0)
 
 	if item.Name != nil {
@@ -232,7 +232,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 	return
 }
 
-func (ro {{ .Computed.service_name_final }}Repo) Delete(ctx context.Context, ids ...uint64) (err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Delete(ctx context.Context, ids ...uint64) (err error) {
 	if len(ids) == 0 {
 		return
 	}
@@ -240,7 +240,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Delete(ctx context.Context, ids
 	placeholders := strings.Repeat("?,", len(ids))
 	placeholders = placeholders[:len(placeholders)-1]
 
-	deleteSQL := fmt.Sprintf("DELETE FROM {{ .Computed.service_name_final }} WHERE id IN (%s)", placeholders)
+	deleteSQL := fmt.Sprintf("DELETE FROM {{ .Computed.service_name_snake }} WHERE id IN (%s)", placeholders)
 	args := make([]interface{}, len(ids))
 	for i, id := range ids {
 		args[i] = id
@@ -256,7 +256,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Delete(ctx context.Context, ids
 {{- if eq .Computed.orm_type_final "gorm" }}
 
 // Create creates a new {{ .Computed.service_name_final }} record using GORM generics API.
-func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 
 	// Check if name exists
@@ -283,7 +283,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Create(ctx context.Context, ite
 	return
 }
 
-func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
 
@@ -300,7 +300,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Get(ctx context.Context, id uin
 	return
 }
 
-func (ro {{ .Computed.service_name_final }}Repo) Find(ctx context.Context, condition *biz.Find{{ .Computed.service_name_capitalized }}) (rp []biz.{{ .Computed.service_name_capitalized }}) {
+func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condition *biz.Find{{ .Computed.service_name_capitalized }}) (rp []biz.{{ .Computed.service_name_capitalized }}) {
 	rp = make([]biz.{{ .Computed.service_name_capitalized }}, 0)
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 
@@ -344,7 +344,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Find(ctx context.Context, condi
 	return
 }
 
-func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, item *biz.Update{{ .Computed.service_name_capitalized }}) (err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, item *biz.Update{{ .Computed.service_name_capitalized }}) (err error) {
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 
 	// Get existing record
@@ -387,7 +387,7 @@ func (ro {{ .Computed.service_name_final }}Repo) Update(ctx context.Context, ite
 	return
 }
 
-func (ro {{ .Computed.service_name_final }}Repo) Delete(ctx context.Context, ids ...uint64) (err error) {
+func (ro {{ .Computed.service_name_camel }}Repo) Delete(ctx context.Context, ids ...uint64) (err error) {
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 
 	_, err = db.Where("id IN ?", ids).Delete(ctx)

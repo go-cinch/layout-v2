@@ -66,7 +66,7 @@ func New{{ .Computed.service_name_capitalized }}UseCase(c *conf.Bootstrap, repo 
 {{- end }}
 {{- if .Computed.enable_cache_final }}
 		cache: cache.WithPrefix(strings.Join([]string{
-			c.Name, "{{ .Computed.service_name_final }}",
+			c.Name, "{{ .Computed.service_name_snake }}",
 		}, "_")),
 {{- end }}
 	}

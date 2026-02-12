@@ -2,9 +2,9 @@
 db:
   driver: {{ .Computed.db_type_final }}
 {{- if eq .Computed.db_type_final "postgres" }}
-  dsn: "postgresql://root:password@127.0.0.1:5432/{{ .Computed.service_name_final }}?sslmode=disable&TimeZone=UTC"
+  dsn: "postgresql://root:password@127.0.0.1:5432/{{ .Computed.service_name_snake }}?sslmode=disable&TimeZone=UTC"
 {{- else }}
-  dsn: "root:root@tcp(localhost:3306)/{{ .Computed.service_name_final }}?charset=utf8mb4&parseTime=True&loc=Local"
+  dsn: "root:root@tcp(localhost:3306)/{{ .Computed.service_name_snake }}?charset=utf8mb4&parseTime=True&loc=Local"
 {{- end }}
   migrate: true
 

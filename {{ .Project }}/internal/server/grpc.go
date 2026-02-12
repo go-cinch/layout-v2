@@ -1,9 +1,7 @@
 package server
 
 import (
-{{- if .Computed.enable_db_final }}
-	tenantMiddleware "{{.Computed.common_module_final}}/middleware/tenant/v2"
-{{- end }}
+
 {{- if .Computed.enable_i18n_final }}
 	"{{.Computed.common_module_final}}/i18n"
 	i18nMiddleware "{{.Computed.common_module_final}}/middleware/i18n"
@@ -21,7 +19,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 {{- end }}
 
-	v1 "{{.Computed.module_name_final}}/api/{{.Computed.service_name_final}}"
+	v1 "{{.Computed.module_name_final}}/api/{{.Computed.service_name_snake}}"
 	"{{.Computed.module_name_final}}/internal/conf"
 	"{{.Computed.module_name_final}}/internal/service"
 )
@@ -30,9 +28,7 @@ import (
 func NewGRPCServer(c *conf.Bootstrap, svc *service.{{.Computed.service_name_capitalized}}Service) *grpc.Server {
 	middlewares := []middleware.Middleware{
 		recovery.Recovery(),
-		{{- if .Computed.enable_db_final }}
-		tenantMiddleware.Tenant(), // Default required middleware for multi-tenancy
-		{{- end }}
+
 		{{- if .Computed.enable_i18n_final }}
 		i18nMiddleware.Translator(i18n.WithLanguage(language.Make(c.Server.Language)), i18n.WithFs(locales)),
 		{{- end }}
