@@ -19,7 +19,7 @@ import (
 	"github.com/go-kratos/kratos/v2/middleware/tracing"
 {{- end }}
 
-	v1 "{{.Computed.module_name_final}}/api/{{.Computed.service_name_snake}}"
+	v1 "{{.Computed.module_name_final}}/api/{{.Computed.service_name_kebab}}"
 	"{{.Computed.module_name_final}}/internal/conf"
 	"{{.Computed.module_name_final}}/internal/service"
 )

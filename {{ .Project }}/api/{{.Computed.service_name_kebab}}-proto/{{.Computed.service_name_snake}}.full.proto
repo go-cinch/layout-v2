@@ -8,7 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/protobuf/empty.proto";
 import "cinch/params/params.proto";
 
-option go_package = "api/{{.Computed.service_name_snake}};{{.Computed.service_name_snake}}";
+option go_package = "api/{{.Computed.service_name_kebab}};{{.Computed.service_name_snake}}";
 option java_multiple_files = true;
 option java_package = "{{.Computed.service_name_snake}}.v1";
 option java_outer_classname = "{{.Computed.service_name_capitalized}}ProtoV1";
@@ -17,7 +17,7 @@ option (openapi.v3.document) = {
   info: {
     title: "{{.Computed.service_name_capitalized}} service";
     version: "1.0.0";
-    description: "This is {{.Computed.service_name_final}} service docs";
+    description: "This is {{.Computed.service_name_kebab}} service docs";
   }
   components: {
     security_schemes: {
@@ -52,29 +52,29 @@ service {{.Computed.service_name_capitalized}} {
   // create one record
   rpc Create{{.Computed.service_name_capitalized}} (Create{{.Computed.service_name_capitalized}}Request) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      post: "/{{.Computed.service_name_final}}/create"
+      post: "/{{.Computed.service_name_kebab}}/create"
       body: "*"
     };
   }
   // query one record
   rpc Get{{.Computed.service_name_capitalized}} (Get{{.Computed.service_name_capitalized}}Request) returns (Get{{.Computed.service_name_capitalized}}Reply) {
     option (google.api.http) = {
-      get: "/{{.Computed.service_name_final}}/get"
+      get: "/{{.Computed.service_name_kebab}}/get"
     };
   }
   // query list by page
   rpc Find{{.Computed.service_name_capitalized}} (Find{{.Computed.service_name_capitalized}}Request) returns (Find{{.Computed.service_name_capitalized}}Reply) {
     option (google.api.http) = {
-      get: "/{{.Computed.service_name_final}}/list"
+      get: "/{{.Computed.service_name_kebab}}/list"
     };
   }
   // update one record by id
   rpc Update{{.Computed.service_name_capitalized}} (Update{{.Computed.service_name_capitalized}}Request) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      put: "/{{.Computed.service_name_final}}/update"
+      put: "/{{.Computed.service_name_kebab}}/update"
       body: "*",
       additional_bindings {
-        patch: "/{{.Computed.service_name_final}}/update",
+        patch: "/{{.Computed.service_name_kebab}}/update",
         body: "*",
       }
     };
@@ -82,7 +82,7 @@ service {{.Computed.service_name_capitalized}} {
   // delete one or more record by id
   rpc Delete{{.Computed.service_name_capitalized}} (params.IdsRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
-      delete: "/{{.Computed.service_name_final}}/delete"
+      delete: "/{{.Computed.service_name_kebab}}/delete"
     };
   }
 }

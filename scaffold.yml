@@ -154,6 +154,7 @@ questions:
 computed:
   # Use provided value, fallback to Project if not provided
   service_name_final: '{{ or .Scaffold.service_name .Scaffold.Project }}'
+  service_name_kebab: '{{ toKebabCase (or .Scaffold.service_name .Scaffold.Project) }}'
   service_name_snake: '{{ toSnakeCase (or .Scaffold.service_name .Scaffold.Project) }}'
   service_name_camel: '{{ toCamelCase (or .Scaffold.service_name .Scaffold.Project) }}'
   service_name_capitalized: '{{ toPascalCase (or .Scaffold.service_name .Scaffold.Project) }}'

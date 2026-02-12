@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 
-	"{{ .Computed.module_name_final }}/api/{{ .Computed.service_name_snake }}"
+	"{{ .Computed.module_name_final }}/api/{{ .Computed.service_name_kebab }}"
 	"{{ .Computed.module_name_final }}/internal/tests/mock"
 )
 

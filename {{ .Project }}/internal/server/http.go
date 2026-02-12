@@ -20,7 +20,7 @@ import (
 	traceMiddleware "{{.Computed.common_module_final}}/middleware/trace"
 {{- end }}
 
-	v1 "{{.Computed.module_name_final}}/api/{{.Computed.service_name_snake}}"
+	v1 "{{.Computed.module_name_final}}/api/{{.Computed.service_name_kebab}}"
 	"{{.Computed.module_name_final}}/internal/conf"
 	{{- if contains "header" .Computed.middlewares_final }}
 	localMiddleware "{{.Computed.module_name_final}}/internal/server/middleware"

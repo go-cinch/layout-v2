@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	{{.Computed.common_module_final}}/log v1.2.0
-	{{.Computed.common_module_final}}/proto/params v1.0.1
+	{{.Computed.common_module_final}}/proto/params v1.0.2
 	{{- if .Computed.enable_reason_final }}
 	github.com/go-kratos/kratos/v2 v2.8.3
 	{{- else }}
