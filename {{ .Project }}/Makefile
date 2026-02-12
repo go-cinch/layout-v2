@@ -381,7 +381,7 @@ build:
 .PHONY: run
 # run service (dev)
 run:
-	@go run ./cmd/$(SERVICE_NAME)
+	@go run ./cmd/$(SERVICE_NAME) -c configs
 
 .PHONY: test
 # run tests
