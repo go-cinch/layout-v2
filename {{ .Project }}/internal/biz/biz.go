@@ -49,10 +49,14 @@ type Cache interface {
 
 // {{ .Computed.service_name_capitalized }}Repo is the repository interface for {{ .Computed.service_name_final }}.
 type {{ .Computed.service_name_capitalized }}Repo interface {
+{{- if eq .Scaffold.proto_template "simple" }}
+	Get(ctx context.Context, id uint64) (*{{ .Computed.service_name_capitalized }}, error)
+{{- else }}
 	Create(ctx context.Context, item *Create{{ .Computed.service_name_capitalized }}) error
 	Get(ctx context.Context, id uint64) (*{{ .Computed.service_name_capitalized }}, error)
 	Find(ctx context.Context, condition *Find{{ .Computed.service_name_capitalized }}) []{{ .Computed.service_name_capitalized }}
 	Update(ctx context.Context, item *Update{{ .Computed.service_name_capitalized }}) error
 	Delete(ctx context.Context, ids ...uint64) error
+{{- end }}
 }
 {{- end }}

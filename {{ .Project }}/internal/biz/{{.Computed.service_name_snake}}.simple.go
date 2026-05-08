@@ -12,10 +12,6 @@ type {{ .Computed.service_name_capitalized }} struct {
 	Name string `json:"name"`
 }
 
-type {{ .Computed.service_name_capitalized }}Repo interface {
-	Get(ctx context.Context, id uint64) (*{{ .Computed.service_name_capitalized }}, error)
-}
-
 type {{ .Computed.service_name_capitalized }}UseCase struct {
 	c    *conf.Bootstrap
 	repo {{ .Computed.service_name_capitalized }}Repo

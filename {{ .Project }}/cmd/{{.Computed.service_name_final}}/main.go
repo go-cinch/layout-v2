@@ -1,11 +1,17 @@
 package main
 
 import (
+{{- if .Computed.enable_trace_final }}
+	"context"
+{{- end }}
 	"flag"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+{{- if .Computed.enable_trace_final }}
+	"time"
+{{- end }}
 
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/config"
@@ -24,6 +30,9 @@ import (
 	"{{.Computed.common_module_final}}/utils"
 
 	"{{.Computed.module_name_final}}/internal/conf"
+{{- if .Computed.enable_trace_final }}
+	"{{.Computed.module_name_final}}/internal/data"
+{{- end }}
 )
 
 var (
@@ -129,6 +138,21 @@ func main() {
 		}
 	}
 	// os.Setenv("COPIERX_UTC", "true")
+
+{{- if .Computed.enable_trace_final }}
+	// Initialize tracer before building servers; kratos tracing middleware captures the provider at setup time.
+	tp, err := data.NewTracer(&bc)
+	if err != nil {
+		log.WithError(err).WithFields(fields).Fatal("initialize tracer failed")
+	}
+	if tp != nil {
+		defer func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = tp.Shutdown(ctx)
+		}()
+	}
+{{- end }}
 
 	app, cleanup, err := wireApp(&bc)
 	if err != nil {
