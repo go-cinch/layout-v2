@@ -21,7 +21,7 @@ import (
 	"{{ .Computed.module_name_final }}/internal/service"
 )
 
-{{- if eq .Scaffold.proto_template "full" }}
+{{- if .Computed.enable_db_final }}
 
 func {{ .Computed.service_name_capitalized }}Service() (svc *service.{{ .Computed.service_name_capitalized }}Service) {
 	useCase := {{ .Computed.service_name_capitalized }}UseCase()
@@ -30,6 +30,14 @@ func {{ .Computed.service_name_capitalized }}Service() (svc *service.{{ .Compute
 }
 
 func {{ .Computed.service_name_capitalized }}UseCase() (useCase *biz.{{ .Computed.service_name_capitalized }}UseCase) {
+{{- if eq .Scaffold.proto_template "simple" }}
+	c, _, _ := Data()
+	repo := {{ .Computed.service_name_capitalized }}Repo()
+	if c == nil || repo == nil {
+		return nil
+	}
+	useCase = biz.New{{ .Computed.service_name_capitalized }}UseCase(c, repo)
+{{- else }}
 {{- if .Computed.enable_biz_tx_final }}
 	{{- if .Computed.enable_cache_final }}
 	c, dataData, cache := Data()
@@ -53,11 +61,15 @@ func {{ .Computed.service_name_capitalized }}UseCase() (useCase *biz.{{ .Compute
 	useCase = biz.New{{ .Computed.service_name_capitalized }}UseCase(c, repo)
 	{{- end }}
 {{- end }}
+{{- end }}
 	return
 }
 
 func {{ .Computed.service_name_capitalized }}Repo() biz.{{ .Computed.service_name_capitalized }}Repo {
 	_, d, _ := Data()
+	if d == nil {
+		return nil
+	}
 	return data.New{{ .Computed.service_name_capitalized }}Repo(d)
 }
 {{- end }}
@@ -132,6 +144,7 @@ var (
 {{- else }}
 	onceCache any
 {{- end }}
+	onceErr   error
 	once      sync.Once
 )
 
@@ -145,11 +158,15 @@ func Data() (c *conf.Bootstrap, dataData *data.Data, cache {{- if .Computed.enab
 {{- else }}
 		onceC = PostgreSQLAndRedis()
 {{- end }}
-		onceData, _, _ = data.NewData(onceC)
+		onceData, _, onceErr = data.NewData(onceC)
+		if onceErr != nil {
+			return
+		}
 {{- if and .Computed.enable_redis_final .Computed.enable_cache_final }}
 		universalClient, err := data.NewRedis(onceC)
 		if err != nil {
-			panic(err)
+			onceErr = err
+			return
 		}
 		onceCache = data.NewCache(onceC, universalClient)
 {{- else }}
@@ -157,6 +174,11 @@ func Data() (c *conf.Bootstrap, dataData *data.Data, cache {{- if .Computed.enab
 {{- end }}
 	})
 	return onceC, onceData, onceCache
+}
+
+func InitError() error {
+	Data()
+	return onceErr
 }
 
 {{- if eq .Computed.db_type_final "mysql" }}
@@ -179,7 +201,9 @@ func MySQLAndRedis() *conf.Bootstrap {
 		Log: &conf.Log{
 			Level:   "debug",
 			JSON:    false,
+{{- if eq .Computed.orm_type_final "gorm" }}
 			ShowSQL: true,
+{{- end }}
 		},
 		Db: &conf.DB{
 			Driver:  "mysql",
@@ -218,7 +242,9 @@ func PostgreSQLAndRedis() *conf.Bootstrap {
 		Log: &conf.Log{
 			Level:   "debug",
 			JSON:    false,
+{{- if eq .Computed.orm_type_final "gorm" }}
 			ShowSQL: true,
+{{- end }}
 		},
 		Db: &conf.DB{
 			Driver:  "postgres",

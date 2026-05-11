@@ -29,7 +29,9 @@ message DB {
 message Log {
   string level = 1;
   bool JSON = 2;
+  {{- if eq .Computed.orm_type_final "gorm" }}
   bool showSQL = 3;
+  {{- end }}
 }
 
 message Server {

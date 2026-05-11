@@ -251,9 +251,13 @@ features:
       - "**/internal/biz/biz.go"
       - "**/internal/data/client.go"
       - "**/configs/client.yaml"
-  - value: '{{ eq .Scaffold.proto_template "full" }}'
+  - value: '{{ .Computed.enable_db_final }}'
     globs:
-      - "**/internal/tests/**"
+      - "**/internal/tests/mock/**"
+      - "**/internal/tests/biz/**"
+  - value: '{{ and .Computed.enable_db_final (eq .Scaffold.proto_template "full") }}'
+    globs:
+      - "**/internal/tests/service/**"
   - value: '{{ .Computed.enable_ws_final }}'
     globs:
       - "**/internal/server/ws.go"

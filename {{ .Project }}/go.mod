@@ -27,20 +27,30 @@ require (
 	gorm.io/driver/postgres v1.5.11
 	{{- end }}
 	{{- else if eq .Computed.orm_type_final "none" }}
+	{{.Computed.common_module_final}}/id v1.0.6
+	{{- if .Computed.enable_redis_final }}
+	{{.Computed.common_module_final}}/utils v1.0.5
+	{{- end }}
 	{{- if eq .Computed.db_type_final "mysql" }}
 	github.com/go-sql-driver/mysql v1.8.1
 	{{- else if eq .Computed.db_type_final "postgres" }}
+	github.com/XSAM/otelsql v0.37.0
 	github.com/lib/pq v1.10.9
 	{{- end }}
 	{{- end }}
+	{{- end }}
+	{{- if .Computed.enable_redis_final }}
+	github.com/redis/go-redis/v9 v9.19.0
 	{{- end }}
 	github.com/google/gnostic v0.7.0
 	github.com/google/wire v0.6.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f
 	google.golang.org/grpc v1.69.4
 	google.golang.org/protobuf v1.36.5
-	{{- if .Computed.enable_trace_final }}
+	{{- if or .Computed.enable_trace_final (and .Computed.enable_db_final (eq .Computed.orm_type_final "none") (eq .Computed.db_type_final "postgres")) }}
 	go.opentelemetry.io/otel v1.34.0
+	{{- end }}
+	{{- if .Computed.enable_trace_final }}
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.34.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.34.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.34.0

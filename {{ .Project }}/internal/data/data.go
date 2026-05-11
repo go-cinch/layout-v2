@@ -3,24 +3,23 @@
 package data
 
 import (
-{{- if .Computed.enable_redis_final }}
 	"context"
-{{- end }}
 	"database/sql"
 	"errors"
 {{- if .Computed.enable_redis_final }}
 	"net/url"
 {{- end }}
+	"strconv"
 	"strings"
-{{- if .Computed.enable_redis_final }}
 	"time"
-{{- end }}
 
+	"{{.Computed.common_module_final}}/id"
 	"{{.Computed.common_module_final}}/log"
 {{- if .Computed.enable_redis_final }}
 	"{{.Computed.common_module_final}}/utils"
 {{- end }}
 {{- if eq .Computed.db_type_final "postgres" }}
+	"github.com/XSAM/otelsql"
 	_ "github.com/lib/pq"
 {{- else if eq .Computed.db_type_final "mysql" }}
 	_ "github.com/go-sql-driver/mysql"
@@ -28,13 +27,28 @@ import (
 {{- if .Computed.enable_redis_final }}
 	"github.com/redis/go-redis/v9"
 {{- end }}
+{{- if eq .Computed.db_type_final "postgres" }}
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+{{- end }}
 
+{{- if .Computed.enable_biz_tx_final }}
+	"{{.Computed.module_name_final}}/internal/biz"
+{{- end }}
 	"{{.Computed.module_name_final}}/internal/conf"
 )
 
 // Data wraps a plain sql.DB connection.
 type Data struct {
-	DB *sql.DB
+	DB        *sql.DB
+	sonyflake *id.Sonyflake
+}
+
+type contextTxKey struct{}
+
+type sqlExecutor interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 }
 
 // NewData initializes a database connection via database/sql.
@@ -54,14 +68,29 @@ func NewData(c *conf.Bootstrap) (*Data, func(), error) {
 
 	const driver = "{{ .Computed.db_type_final }}"
 
+{{- if eq .Computed.db_type_final "postgres" }}
+	db, err := otelsql.Open(
+		driver,
+		dsn,
+		otelsql.WithAttributes(semconv.DBSystemPostgreSQL),
+	)
+{{- else }}
 	db, err := sql.Open(driver, dsn)
+{{- end }}
 	if err != nil {
 		log.WithError(err).Error("open database failed")
 		return nil, nil, err
 	}
 
 	if err := db.Ping(); err != nil {
+		_ = db.Close()
 		log.WithError(err).Error("ping database failed")
+		return nil, nil, err
+	}
+
+	sonyflake, err := NewSonyflake(c)
+	if err != nil {
+		_ = db.Close()
 		return nil, nil, err
 	}
 
@@ -76,7 +105,73 @@ func NewData(c *conf.Bootstrap) (*Data, func(), error) {
 
 	log.Info("initialize database success, driver: %s", driver)
 
-	return &Data{DB: db}, cleanup, nil
+	return &Data{
+		DB:        db,
+		sonyflake: sonyflake,
+	}, cleanup, nil
+}
+
+// ID generates a unique distributed ID using Sonyflake.
+func (d *Data) ID(ctx context.Context) uint64 {
+	return d.sonyflake.ID(ctx)
+}
+
+// SQL returns a database executor from context.
+// If a transaction is present in the context, it returns the transaction.
+func (d *Data) SQL(ctx context.Context) sqlExecutor {
+	tx, ok := ctx.Value(contextTxKey{}).(*sql.Tx)
+	if ok {
+		return tx
+	}
+	return d.DB
+}
+
+// Tx is transaction wrapper.
+func (d *Data) Tx(ctx context.Context, handler func(ctx context.Context) error) error {
+	tx, err := d.DB.BeginTx(ctx, nil)
+	if err != nil {
+		log.WithError(err).Error("begin transaction failed")
+		return err
+	}
+
+	txCtx := context.WithValue(ctx, contextTxKey{}, tx)
+	if err := handler(txCtx); err != nil {
+		if rollbackErr := tx.Rollback(); rollbackErr != nil {
+			log.WithError(rollbackErr).Error("rollback transaction failed")
+		}
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		log.WithError(err).Error("commit transaction failed")
+		return err
+	}
+	return nil
+}
+
+{{- if .Computed.enable_biz_tx_final }}
+
+// NewTransaction creates a new Transaction from Data.
+func NewTransaction(d *Data) biz.Transaction {
+	return d
+}
+{{- end }}
+
+// NewSonyflake initializes the Sonyflake ID generator.
+func NewSonyflake(c *conf.Bootstrap) (*id.Sonyflake, error) {
+	machineID, _ := strconv.ParseUint(c.Server.MachineId, 10, 16)
+	sf := id.NewSonyflake(
+		id.WithSonyflakeMachineID(uint16(machineID)),
+		id.WithSonyflakeStartTime(time.Date({{ now | date "2006" }}, 1, 1, 0, 0, 0, 0, time.UTC)),
+	)
+	if sf.Error != nil {
+		log.WithError(sf.Error).Error("initialize sonyflake failed")
+		return nil, errors.New("initialize sonyflake failed")
+	}
+	log.
+		WithField("machine.id", machineID).
+		Info("initialize sonyflake success")
+	return sf, nil
 }
 {{- if .Computed.enable_redis_final }}
 

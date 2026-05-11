@@ -53,8 +53,8 @@ func New{{ .Computed.service_name_capitalized }}Repo(data *Data) biz.{{ .Compute
 func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
 	// Check if name exists
 	var count int
-	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE name = $1"
-	err = ro.data.DB.QueryRowContext(ctx, checkSQL, item.Name).Scan(&count)
+	checkSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE name = $1"
+	err = ro.data.SQL(ctx).QueryRowContext(ctx, checkSQL, item.Name).Scan(&count)
 	if err != nil {
 		log.WithContext(ctx).WithError(err).Error("check name exists failed")
 		return
@@ -64,11 +64,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, ite
 		return
 	}
 
-	insertSQL := "INSERT INTO {{ .Computed.service_name_snake }} (id, name, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())"
+	insertSQL := "INSERT INTO t_{{ .Computed.service_name_snake }} (id, name, created_at, updated_at) VALUES ($1, $2, NOW(), NOW())"
 	if item.ID == 0 {
 		item.ID = ro.data.ID(ctx)
 	}
-	_, err = ro.data.DB.ExecContext(ctx, insertSQL, item.ID, item.Name)
+	_, err = ro.data.SQL(ctx).ExecContext(ctx, insertSQL, item.ID, item.Name)
 	if err != nil {
 		log.WithContext(ctx).WithError(err).Error("create {{ .Computed.service_name_final }} failed")
 	}
@@ -77,8 +77,8 @@ func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, ite
 
 func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
-	query := "SELECT id, name FROM {{ .Computed.service_name_snake }} WHERE id = $1"
-	err = ro.data.DB.QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
+	query := "SELECT id, name FROM t_{{ .Computed.service_name_snake }} WHERE id = $1"
+	err = ro.data.SQL(ctx).QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
 	if err == sql.ErrNoRows {
 		err = biz.ErrRecordNotFound(ctx)
 		return
@@ -88,60 +88,23 @@ func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uin
 	}
 	return
 }
-{{ else }}
-func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
-	// Check if name exists
-	var count int
-	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE name = ?"
-	err = ro.data.DB.QueryRowContext(ctx, checkSQL, item.Name).Scan(&count)
-	if err != nil {
-		log.WithContext(ctx).WithError(err).Error("check name exists failed")
-		return
-	}
-	if count > 0 {
-		err = biz.ErrDuplicateField(ctx, "name", item.Name)
-		return
-	}
-
-	insertSQL := "INSERT INTO {{ .Computed.service_name_snake }} (id, name, created_at, updated_at) VALUES (?, ?, NOW(), NOW())"
-	if item.ID == 0 {
-		item.ID = ro.data.ID(ctx)
-	}
-	_, err = ro.data.DB.ExecContext(ctx, insertSQL, item.ID, item.Name)
-	if err != nil {
-		log.WithContext(ctx).WithError(err).Error("create {{ .Computed.service_name_final }} failed")
-	}
-	return
-}
-
-func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
-	item = &biz.{{ .Computed.service_name_capitalized }}{}
-	query := "SELECT id, name FROM {{ .Computed.service_name_snake }} WHERE id = ?"
-	err = ro.data.DB.QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
-	if err == sql.ErrNoRows {
-		err = biz.ErrRecordNotFound(ctx)
-		return
-	}
-	if err != nil {
-		log.WithContext(ctx).WithError(err).Error("get {{ .Computed.service_name_final }} failed")
-	}
-	return
-}
-{{ end }}
 
 func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condition *biz.Find{{ .Computed.service_name_capitalized }}) (rp []biz.{{ .Computed.service_name_capitalized }}) {
 	rp = make([]biz.{{ .Computed.service_name_capitalized }}, 0)
 
 	// Get total count for pagination first
 	if !condition.Page.Disable {
-		countQuery := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE 1=1"
+		countQuery := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE 1=1"
 		countArgs := make([]interface{}, 0)
 		if condition.Name != nil {
-			countQuery += " AND name LIKE ?"
+			countQuery += " AND name LIKE $1"
 			countArgs = append(countArgs, "%"+*condition.Name+"%")
 		}
 		var total int64
-		_ = ro.data.DB.QueryRowContext(ctx, countQuery, countArgs...).Scan(&total)
+		if err := ro.data.SQL(ctx).QueryRowContext(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+			log.WithContext(ctx).WithError(err).Error("count {{ .Computed.service_name_final }} failed")
+			return
+		}
 		condition.Page.Total = total
 
 		// Early return if no results
@@ -150,7 +113,178 @@ func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condi
 		}
 	}
 
-	query := "SELECT id, name FROM {{ .Computed.service_name_snake }} WHERE 1=1"
+	query := "SELECT id, name FROM t_{{ .Computed.service_name_snake }} WHERE 1=1"
+	args := make([]interface{}, 0)
+
+	if condition.Name != nil {
+		query += " AND name LIKE $1"
+		args = append(args, "%"+*condition.Name+"%")
+	}
+
+	query += " ORDER BY id DESC"
+
+	// Apply pagination using page/v2
+	if !condition.Page.Disable {
+		limit, offset := condition.Page.Limit()
+		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
+	}
+
+	rows, err := ro.data.SQL(ctx).QueryContext(ctx, query, args...)
+	if err != nil {
+		log.WithContext(ctx).WithError(err).Error("find {{ .Computed.service_name_final }} failed")
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var item biz.{{ .Computed.service_name_capitalized }}
+		if err := rows.Scan(&item.ID, &item.Name); err != nil {
+			log.WithContext(ctx).WithError(err).Warn("scan {{ .Computed.service_name_final }} row failed")
+			continue
+		}
+		rp = append(rp, item)
+	}
+	if err := rows.Err(); err != nil {
+		log.WithContext(ctx).WithError(err).Error("iterate {{ .Computed.service_name_final }} rows failed")
+	}
+
+	return
+}
+
+func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, item *biz.Update{{ .Computed.service_name_capitalized }}) (err error) {
+	// Check if record exists
+	var exists int
+	checkSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE id = $1"
+	err = ro.data.SQL(ctx).QueryRowContext(ctx, checkSQL, item.ID).Scan(&exists)
+	if err != nil {
+		log.WithContext(ctx).WithError(err).Error("check {{ .Computed.service_name_final }} exists failed")
+		return
+	}
+	if exists == 0 {
+		err = biz.ErrRecordNotFound(ctx)
+		return
+	}
+
+	// Check name uniqueness if updating name
+	if item.Name != nil {
+		var count int
+		nameCheckSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE name = $1 AND id != $2"
+		err = ro.data.SQL(ctx).QueryRowContext(ctx, nameCheckSQL, *item.Name, item.ID).Scan(&count)
+		if err != nil {
+			log.WithContext(ctx).WithError(err).Error("check name uniqueness failed")
+			return
+		}
+		if count > 0 {
+			err = biz.ErrDuplicateField(ctx, "name", *item.Name)
+			return
+		}
+	}
+
+	updateSQL := "UPDATE t_{{ .Computed.service_name_snake }} SET updated_at = NOW()"
+	args := make([]interface{}, 0)
+	argIndex := 1
+
+	if item.Name != nil {
+		updateSQL += fmt.Sprintf(", name = $%d", argIndex)
+		args = append(args, *item.Name)
+		argIndex++
+	}
+
+	updateSQL += fmt.Sprintf(" WHERE id = $%d", argIndex)
+	args = append(args, item.ID)
+
+	_, err = ro.data.SQL(ctx).ExecContext(ctx, updateSQL, args...)
+	if err != nil {
+		log.WithContext(ctx).WithError(err).Error("update {{ .Computed.service_name_final }} failed")
+	}
+	return
+}
+
+func (ro {{ .Computed.service_name_camel }}Repo) Delete(ctx context.Context, ids ...uint64) (err error) {
+	if len(ids) == 0 {
+		return
+	}
+
+	placeholders := make([]string, len(ids))
+	args := make([]interface{}, len(ids))
+	for i, id := range ids {
+		placeholders[i] = fmt.Sprintf("$%d", i+1)
+		args[i] = id
+	}
+
+	deleteSQL := fmt.Sprintf("DELETE FROM t_{{ .Computed.service_name_snake }} WHERE id IN (%s)", strings.Join(placeholders, ","))
+
+	_, err = ro.data.SQL(ctx).ExecContext(ctx, deleteSQL, args...)
+	if err != nil {
+		log.WithContext(ctx).WithError(err).Error("delete {{ .Computed.service_name_final }} failed")
+	}
+	return
+}
+{{ else }}
+func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
+	// Check if name exists
+	var count int
+	checkSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE name = ?"
+	err = ro.data.SQL(ctx).QueryRowContext(ctx, checkSQL, item.Name).Scan(&count)
+	if err != nil {
+		log.WithContext(ctx).WithError(err).Error("check name exists failed")
+		return
+	}
+	if count > 0 {
+		err = biz.ErrDuplicateField(ctx, "name", item.Name)
+		return
+	}
+
+	insertSQL := "INSERT INTO t_{{ .Computed.service_name_snake }} (id, name, created_at, updated_at) VALUES (?, ?, NOW(), NOW())"
+	if item.ID == 0 {
+		item.ID = ro.data.ID(ctx)
+	}
+	_, err = ro.data.SQL(ctx).ExecContext(ctx, insertSQL, item.ID, item.Name)
+	if err != nil {
+		log.WithContext(ctx).WithError(err).Error("create {{ .Computed.service_name_final }} failed")
+	}
+	return
+}
+
+func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+	item = &biz.{{ .Computed.service_name_capitalized }}{}
+	query := "SELECT id, name FROM t_{{ .Computed.service_name_snake }} WHERE id = ?"
+	err = ro.data.SQL(ctx).QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
+	if err == sql.ErrNoRows {
+		err = biz.ErrRecordNotFound(ctx)
+		return
+	}
+	if err != nil {
+		log.WithContext(ctx).WithError(err).Error("get {{ .Computed.service_name_final }} failed")
+	}
+	return
+}
+
+func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condition *biz.Find{{ .Computed.service_name_capitalized }}) (rp []biz.{{ .Computed.service_name_capitalized }}) {
+	rp = make([]biz.{{ .Computed.service_name_capitalized }}, 0)
+
+	// Get total count for pagination first
+	if !condition.Page.Disable {
+		countQuery := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE 1=1"
+		countArgs := make([]interface{}, 0)
+		if condition.Name != nil {
+			countQuery += " AND name LIKE ?"
+			countArgs = append(countArgs, "%"+*condition.Name+"%")
+		}
+		var total int64
+		if err := ro.data.SQL(ctx).QueryRowContext(ctx, countQuery, countArgs...).Scan(&total); err != nil {
+			log.WithContext(ctx).WithError(err).Error("count {{ .Computed.service_name_final }} failed")
+			return
+		}
+		condition.Page.Total = total
+
+		// Early return if no results
+		if total == 0 {
+			return
+		}
+	}
+
+	query := "SELECT id, name FROM t_{{ .Computed.service_name_snake }} WHERE 1=1"
 	args := make([]interface{}, 0)
 
 	if condition.Name != nil {
@@ -166,7 +300,7 @@ func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condi
 		query += fmt.Sprintf(" LIMIT %d OFFSET %d", limit, offset)
 	}
 
-	rows, err := ro.data.DB.QueryContext(ctx, query, args...)
+	rows, err := ro.data.SQL(ctx).QueryContext(ctx, query, args...)
 	if err != nil {
 		log.WithContext(ctx).WithError(err).Error("find {{ .Computed.service_name_final }} failed")
 		return
@@ -176,10 +310,13 @@ func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condi
 	for rows.Next() {
 		var item biz.{{ .Computed.service_name_capitalized }}
 		if err := rows.Scan(&item.ID, &item.Name); err != nil {
-		log.WithContext(ctx).WithError(err).Warn("scan {{ .Computed.service_name_final }} row failed")
+			log.WithContext(ctx).WithError(err).Warn("scan {{ .Computed.service_name_final }} row failed")
 			continue
 		}
 		rp = append(rp, item)
+	}
+	if err := rows.Err(); err != nil {
+		log.WithContext(ctx).WithError(err).Error("iterate {{ .Computed.service_name_final }} rows failed")
 	}
 
 	return
@@ -188,8 +325,8 @@ func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condi
 func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, item *biz.Update{{ .Computed.service_name_capitalized }}) (err error) {
 	// Check if record exists
 	var exists int
-	checkSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE id = ?"
-	err = ro.data.DB.QueryRowContext(ctx, checkSQL, item.ID).Scan(&exists)
+	checkSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE id = ?"
+	err = ro.data.SQL(ctx).QueryRowContext(ctx, checkSQL, item.ID).Scan(&exists)
 	if err != nil {
 		log.WithContext(ctx).WithError(err).Error("check {{ .Computed.service_name_final }} exists failed")
 		return
@@ -202,8 +339,8 @@ func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, ite
 	// Check name uniqueness if updating name
 	if item.Name != nil {
 		var count int
-		nameCheckSQL := "SELECT COUNT(*) FROM {{ .Computed.service_name_snake }} WHERE name = ? AND id != ?"
-		err = ro.data.DB.QueryRowContext(ctx, nameCheckSQL, *item.Name, item.ID).Scan(&count)
+		nameCheckSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE name = ? AND id != ?"
+		err = ro.data.SQL(ctx).QueryRowContext(ctx, nameCheckSQL, *item.Name, item.ID).Scan(&count)
 		if err != nil {
 			log.WithContext(ctx).WithError(err).Error("check name uniqueness failed")
 			return
@@ -214,7 +351,7 @@ func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, ite
 		}
 	}
 
-	updateSQL := "UPDATE {{ .Computed.service_name_snake }} SET updated_at = NOW()"
+	updateSQL := "UPDATE t_{{ .Computed.service_name_snake }} SET updated_at = NOW()"
 	args := make([]interface{}, 0)
 
 	if item.Name != nil {
@@ -225,7 +362,7 @@ func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, ite
 	updateSQL += " WHERE id = ?"
 	args = append(args, item.ID)
 
-	_, err = ro.data.DB.ExecContext(ctx, updateSQL, args...)
+	_, err = ro.data.SQL(ctx).ExecContext(ctx, updateSQL, args...)
 	if err != nil {
 		log.WithContext(ctx).WithError(err).Error("update {{ .Computed.service_name_final }} failed")
 	}
@@ -240,18 +377,19 @@ func (ro {{ .Computed.service_name_camel }}Repo) Delete(ctx context.Context, ids
 	placeholders := strings.Repeat("?,", len(ids))
 	placeholders = placeholders[:len(placeholders)-1]
 
-	deleteSQL := fmt.Sprintf("DELETE FROM {{ .Computed.service_name_snake }} WHERE id IN (%s)", placeholders)
+	deleteSQL := fmt.Sprintf("DELETE FROM t_{{ .Computed.service_name_snake }} WHERE id IN (%s)", placeholders)
 	args := make([]interface{}, len(ids))
 	for i, id := range ids {
 		args[i] = id
 	}
 
-	_, err = ro.data.DB.ExecContext(ctx, deleteSQL, args...)
+	_, err = ro.data.SQL(ctx).ExecContext(ctx, deleteSQL, args...)
 	if err != nil {
 		log.WithContext(ctx).WithError(err).Error("delete {{ .Computed.service_name_final }} failed")
 	}
 	return
 }
+{{ end }}
 {{- end }}
 {{- if eq .Computed.orm_type_final "gorm" }}
 

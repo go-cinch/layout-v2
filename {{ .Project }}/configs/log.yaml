@@ -1,4 +1,6 @@
 log:
   level: info
   JSON: true
+{{- if eq .Computed.orm_type_final "gorm" }}
   showSQL: true
+{{- end }}
