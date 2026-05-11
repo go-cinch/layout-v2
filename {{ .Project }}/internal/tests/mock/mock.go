@@ -14,6 +14,9 @@ import (
 	"{{.Computed.common_module_final}}/mock"
 {{- end }}
 	"github.com/go-kratos/kratos/v2/transport"
+{{- if .Computed.enable_trace_final }}
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+{{- end }}
 
 	"{{ .Computed.module_name_final }}/internal/biz"
 	"{{ .Computed.module_name_final }}/internal/conf"
@@ -139,6 +142,9 @@ func NewContextWithUserId(ctx context.Context, u string) context.Context {
 var (
 	onceC     *conf.Bootstrap
 	onceData  *data.Data
+{{- if .Computed.enable_trace_final }}
+	onceTracer *sdktrace.TracerProvider
+{{- end }}
 {{- if .Computed.enable_cache_final }}
 	onceCache biz.Cache
 {{- else }}
@@ -157,6 +163,12 @@ func Data() (c *conf.Bootstrap, dataData *data.Data, cache {{- if .Computed.enab
 		onceC = MySQLAndRedis()
 {{- else }}
 		onceC = PostgreSQLAndRedis()
+{{- end }}
+{{- if .Computed.enable_trace_final }}
+		onceTracer, onceErr = data.NewTracer(onceC)
+		if onceErr != nil {
+			return
+		}
 {{- end }}
 		onceData, _, onceErr = data.NewData(onceC)
 		if onceErr != nil {
@@ -181,6 +193,17 @@ func InitError() error {
 	return onceErr
 }
 
+{{- if .Computed.enable_trace_final }}
+
+func FlushTracer(ctx context.Context) error {
+	Data()
+	if onceTracer == nil {
+		return onceErr
+	}
+	return onceTracer.ForceFlush(ctx)
+}
+{{- end }}
+
 {{- if eq .Computed.db_type_final "mysql" }}
 
 func MySQLAndRedis() *conf.Bootstrap {
@@ -195,6 +218,8 @@ func MySQLAndRedis() *conf.Bootstrap {
 	}
 {{- end }}
 	return &conf.Bootstrap{
+		Name:    "{{ .Computed.service_name_final }}-test",
+		Version: "test",
 		Server: &conf.Server{
 			MachineId: "123",
 		},
@@ -218,6 +243,7 @@ func MySQLAndRedis() *conf.Bootstrap {
 {{- if .Computed.enable_trace_final }}
 		Tracer: &conf.Tracer{
 			Enable: true,
+			Ratio:  1,
 			Otlp:   &conf.Tracer_Otlp{},
 			Stdout: &conf.Tracer_Stdout{},
 		},
@@ -236,6 +262,8 @@ func PostgreSQLAndRedis() *conf.Bootstrap {
 	}
 {{- end }}
 	return &conf.Bootstrap{
+		Name:    "{{ .Computed.service_name_final }}-test",
+		Version: "test",
 		Server: &conf.Server{
 			MachineId: "123",
 		},
@@ -259,6 +287,7 @@ func PostgreSQLAndRedis() *conf.Bootstrap {
 {{- if .Computed.enable_trace_final }}
 		Tracer: &conf.Tracer{
 			Enable: true,
+			Ratio:  1,
 			Otlp:   &conf.Tracer_Otlp{},
 			Stdout: &conf.Tracer_Stdout{},
 		},

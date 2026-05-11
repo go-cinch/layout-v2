@@ -15,6 +15,9 @@ import (
 func Test{{ .Computed.service_name_capitalized }}RepoGet(t *testing.T) {
 	repo := {{ .Computed.service_name_camel }}Repo(t)
 	ctx := context.Background()
+{{- if .Computed.enable_trace_final }}
+	defer flushTracer(t)
+{{- end }}
 
 {{- if eq .Scaffold.proto_template "full" }}
 	seed := &biz.Create{{ .Computed.service_name_capitalized }}{
@@ -61,3 +64,14 @@ func {{ .Computed.service_name_camel }}Repo(t *testing.T) biz.{{ .Computed.servi
 	}
 	return repo
 }
+
+{{- if .Computed.enable_trace_final }}
+
+func flushTracer(t *testing.T) {
+	t.Helper()
+
+	if err := mock.FlushTracer(context.Background()); err != nil {
+		t.Logf("flush tracer failed: %v", err)
+	}
+}
+{{- end }}

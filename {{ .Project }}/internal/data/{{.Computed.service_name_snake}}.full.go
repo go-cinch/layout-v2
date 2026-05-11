@@ -18,6 +18,9 @@ import (
 	"{{.Computed.common_module_final}}/utils"
 {{- end }}
 	"github.com/google/wire"
+{{- if .Computed.enable_trace_final }}
+	"go.opentelemetry.io/otel"
+{{- end }}
 
 	"{{.Computed.module_name_final}}/internal/biz"
 {{- if eq .Computed.orm_type_final "gorm" }}
@@ -51,6 +54,11 @@ func New{{ .Computed.service_name_capitalized }}Repo(data *Data) biz.{{ .Compute
 
 {{ if eq .Computed.db_type_final "postgres" }}
 func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Create")
+	defer span.End()
+{{- end }}
 	// Check if name exists
 	var count int
 	checkSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE name = $1"
@@ -76,6 +84,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, ite
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Get")
+	defer span.End()
+{{- end }}
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
 	query := "SELECT id, name FROM t_{{ .Computed.service_name_snake }} WHERE id = $1"
 	err = ro.data.SQL(ctx).QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
@@ -90,6 +103,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uin
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condition *biz.Find{{ .Computed.service_name_capitalized }}) (rp []biz.{{ .Computed.service_name_capitalized }}) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Find")
+	defer span.End()
+{{- end }}
 	rp = make([]biz.{{ .Computed.service_name_capitalized }}, 0)
 
 	// Get total count for pagination first
@@ -152,6 +170,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condi
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, item *biz.Update{{ .Computed.service_name_capitalized }}) (err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Update")
+	defer span.End()
+{{- end }}
 	// Check if record exists
 	var exists int
 	checkSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE id = $1"
@@ -201,6 +224,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, ite
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Delete(ctx context.Context, ids ...uint64) (err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Delete")
+	defer span.End()
+{{- end }}
 	if len(ids) == 0 {
 		return
 	}
@@ -222,6 +250,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Delete(ctx context.Context, ids
 }
 {{ else }}
 func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Create")
+	defer span.End()
+{{- end }}
 	// Check if name exists
 	var count int
 	checkSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE name = ?"
@@ -247,6 +280,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, ite
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Get")
+	defer span.End()
+{{- end }}
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
 	query := "SELECT id, name FROM t_{{ .Computed.service_name_snake }} WHERE id = ?"
 	err = ro.data.SQL(ctx).QueryRowContext(ctx, query, id).Scan(&item.ID, &item.Name)
@@ -261,6 +299,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uin
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condition *biz.Find{{ .Computed.service_name_capitalized }}) (rp []biz.{{ .Computed.service_name_capitalized }}) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Find")
+	defer span.End()
+{{- end }}
 	rp = make([]biz.{{ .Computed.service_name_capitalized }}, 0)
 
 	// Get total count for pagination first
@@ -323,6 +366,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condi
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, item *biz.Update{{ .Computed.service_name_capitalized }}) (err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Update")
+	defer span.End()
+{{- end }}
 	// Check if record exists
 	var exists int
 	checkSQL := "SELECT COUNT(*) FROM t_{{ .Computed.service_name_snake }} WHERE id = ?"
@@ -370,6 +418,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, ite
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Delete(ctx context.Context, ids ...uint64) (err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Delete")
+	defer span.End()
+{{- end }}
 	if len(ids) == 0 {
 		return
 	}
@@ -395,6 +448,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Delete(ctx context.Context, ids
 
 // Create creates a new {{ .Computed.service_name_final }} record using GORM generics API.
 func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, item *biz.Create{{ .Computed.service_name_capitalized }}) (err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Create")
+	defer span.End()
+{{- end }}
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 
 	// Check if name exists
@@ -422,6 +480,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Create(ctx context.Context, ite
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uint64) (item *biz.{{ .Computed.service_name_capitalized }}, err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Get")
+	defer span.End()
+{{- end }}
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 	item = &biz.{{ .Computed.service_name_capitalized }}{}
 
@@ -439,6 +502,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Get(ctx context.Context, id uin
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condition *biz.Find{{ .Computed.service_name_capitalized }}) (rp []biz.{{ .Computed.service_name_capitalized }}) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Find")
+	defer span.End()
+{{- end }}
 	rp = make([]biz.{{ .Computed.service_name_capitalized }}, 0)
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 
@@ -483,6 +551,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Find(ctx context.Context, condi
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, item *biz.Update{{ .Computed.service_name_capitalized }}) (err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Update")
+	defer span.End()
+{{- end }}
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 
 	// Get existing record
@@ -526,6 +599,11 @@ func (ro {{ .Computed.service_name_camel }}Repo) Update(ctx context.Context, ite
 }
 
 func (ro {{ .Computed.service_name_camel }}Repo) Delete(ctx context.Context, ids ...uint64) (err error) {
+{{- if .Computed.enable_trace_final }}
+	tr := otel.Tracer("data")
+	ctx, span := tr.Start(ctx, "{{ .Computed.service_name_capitalized }}Repo.Delete")
+	defer span.End()
+{{- end }}
 	db := gorm.G[model.{{ .Computed.service_name_capitalized }}](ro.data.DB(ctx))
 
 	_, err = db.Where("id IN ?", ids).Delete(ctx)
