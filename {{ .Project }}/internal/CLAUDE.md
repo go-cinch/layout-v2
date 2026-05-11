@@ -17,3 +17,9 @@
 - `data` package defines repo implementations and directly operates the database
 - `data` package should focus on persistence concerns and SQL/query assembly
 - `data` package does not need to repeatedly validate whether upstream request parameters are legal once they have entered the repo
+
+## Test Placement
+
+- tests for the `biz` package should be placed under `internal/tests/biz`
+- tests for the `data` package should be placed under `internal/tests/data`
+- tests for the `service` package should be placed under `internal/tests/service`
