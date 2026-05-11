@@ -22,5 +22,6 @@ COPY --from=builder /src/bin /app
 WORKDIR /app
 
 COPY configs /data/conf
+COPY docs /app/docs
 
 CMD ["sh", "-c", "./{{ .Computed.service_name_final }} -c /data/conf"]

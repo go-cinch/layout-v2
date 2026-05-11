@@ -4,17 +4,62 @@ package {{.Computed.service_name_snake}}.v1;
 
 import "google/api/annotations.proto";
 import "google/api/field_behavior.proto";
+import "openapiv3/annotations.proto";
 
 option go_package = "api/{{.Computed.service_name_kebab}};{{.Computed.service_name_snake}}";
 option java_multiple_files = true;
 option java_package = "{{.Computed.service_name_snake}}.v1";
 option java_outer_classname = "{{.Computed.service_name_capitalized}}ProtoV1";
 
+option (openapi.v3.document) = {
+  info: {
+    title: "{{.Computed.service_name_capitalized}} API";
+    version: "1.0.0";
+  },
+  servers: [
+    {
+      url: "{{.Computed.openapi_dev_url_final}}"
+      description: "dev"
+    },
+    {
+      url: "{{.Computed.openapi_local_url_final}}"
+      description: "local"
+    }
+  ],
+  components: {
+    security_schemes: {
+      additional_properties: [
+        {
+          name: "BearerAuth";
+          value: {
+            security_scheme: {
+              type: "http";
+              scheme: "bearer";
+            }
+          }
+        }
+      ]
+    }
+  }
+  security: [
+    {
+      additional_properties: [
+        {
+          name: "BearerAuth";
+          value: {
+            value: []
+          }
+        }
+      ]
+    }
+  ]
+};
+
 service {{.Computed.service_name_capitalized}} {
   // Get a record by id
   rpc Get{{.Computed.service_name_capitalized}} (Get{{.Computed.service_name_capitalized}}Request) returns (Get{{.Computed.service_name_capitalized}}Reply) {
     option (google.api.http) = {
-      get: "/{{.Computed.service_name_kebab}}/get"
+      get: "/get"
     };
   }
 }

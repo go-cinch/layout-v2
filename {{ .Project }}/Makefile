@@ -50,6 +50,7 @@ else
 	INTERNAL_PROTO_FILES=$(shell find internal -name *.proto)
 	API_PROTO_FILES=$(shell find api -maxdepth 2 -name *.proto)
 endif
+SERVICE_PROTO_FILE := api/{{.Computed.service_name_kebab}}-proto/{{.Computed.service_name_snake}}.proto
 
 .PHONY: init
 # init env (install local toolchain into .tools/bin)
@@ -133,7 +134,33 @@ api:
 			--openapi_out=fq_schema_naming=true,default_response=false,output_mode=source_relative:docs \
 			$$NAME; \
 	done
+	@$(MAKE) --no-print-directory docs-specs
 	@echo 'You can import *.json into https://editor.swagger.io/'
+
+.PHONY: docs-specs
+docs-specs:
+	@mkdir -p docs
+	@echo "Updating docs/specs.json..."
+	@printf '[\n' > docs/specs.json
+	@first=1; \
+	for PROTO in $(SERVICE_PROTO_FILE) $(sort $(filter-out $(SERVICE_PROTO_FILE),$(API_PROTO_FILES))); do \
+		DOC_FILE="docs/$${PROTO#api/}"; \
+		DOC_FILE="$${DOC_FILE%.proto}.openapi.yaml"; \
+		if [ ! -f "$$DOC_FILE" ]; then \
+			continue; \
+		fi; \
+		TITLE=$$(awk 'BEGIN {in_info=0} /^info:/ {in_info=1; next} in_info && /^[^[:space:]]/ {in_info=0} in_info && /^[[:space:]]*title:/ {sub(/^[[:space:]]*title:[[:space:]]*/, ""); print; exit}' "$$DOC_FILE" | tr -d '"'); \
+		if [ -z "$$TITLE" ]; then \
+			TITLE=$$(basename "$$DOC_FILE" .openapi.yaml | sed 's/[_-][_-]*/ /g' | awk '{for (i=1; i<=NF; i++) $$i=toupper(substr($$i,1,1)) substr($$i,2)} 1'); \
+		fi; \
+		URL="./$${DOC_FILE#docs/}"; \
+		TITLE_ESC=$$(printf '%s' "$$TITLE" | sed 's/\\/\\\\/g; s/"/\\"/g'); \
+		URL_ESC=$$(printf '%s' "$$URL" | sed 's/\\/\\\\/g; s/"/\\"/g'); \
+		if [ "$$first" -eq 0 ]; then printf ',\n' >> docs/specs.json; fi; \
+		printf '  {\n    "name": "%s",\n    "url": "%s"\n  }' "$$TITLE_ESC" "$$URL_ESC" >> docs/specs.json; \
+		first=0; \
+	done; \
+	printf '\n]\n' >> docs/specs.json
 
 .PHONY: wire
 # generate wire
@@ -405,44 +432,6 @@ debug-grpc:
 		echo "No proto files found, using reflection only..."; \
 		grpcui -plaintext "127.0.0.1:$(GRPC_PORT)"; \
 	fi
-
-.PHONY: debug-http
-# debug http api with swagger ui
-debug-http:
-	@OPENAPI_FILE=$$(find docs -name "*.openapi.yaml" | head -1); \
-	if [ -z "$$OPENAPI_FILE" ]; then \
-		echo "Error: No OpenAPI file found in docs directory. Please run 'make api' first."; \
-		exit 1; \
-	fi; \
-	echo "Generating Swagger UI with embedded OpenAPI spec..."; \
-	TMP_YAML="docs/.openapi-temp.yaml"; \
-	awk 'BEGIN {added=0; in_info=0} \
-		/^openapi:/ {print; next} \
-		/^info:/ {in_info=1; print; next} \
-		in_info && /^[a-z]+:/ && !added { \
-			print "servers:"; \
-			print "    - url: http://localhost:$(HTTP_PORT)"; \
-			added=1; \
-		} \
-		/^servers:/ {skip=1; next} \
-		skip && /^    - / {next} \
-		skip && /^[a-z]+:/ {skip=0} \
-		{if (!skip) print}' "$$OPENAPI_FILE" | \
-		sed 's/\\/\\\\/g; s/`/\\`/g' > "$$TMP_YAML"; \
-	awk '/OPENAPI_YAML_CONTENT/ { \
-		print "      const openapiYaml = `"; \
-		while ((getline line < "'"$$TMP_YAML"'") > 0) print line; \
-		print "`"; \
-		next; \
-	} \
-	{print}' docs/swagger-for-debug.html > docs/swagger-ui.html; \
-	rm -f "$$TMP_YAML"; \
-	echo "Swagger UI available at:"; \
-	echo "  http://localhost:$(HTTP_PORT)/docs/swagger-ui.html"; \
-	echo ""; \
-	echo "Make sure your service is running with 'make run'"; \
-	open "http://localhost:$(HTTP_PORT)/docs/swagger-ui.html" || \
-	echo "Please open http://localhost:$(HTTP_PORT)/docs/swagger-ui.html in your browser"
 
 .PHONY: all
 # generate all

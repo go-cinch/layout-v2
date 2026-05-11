@@ -1,0 +1,10 @@
+[
+  {
+    "name": "{{.Computed.service_name_capitalized}}",
+    "url": "./{{.Computed.service_name_kebab}}-proto/{{.Computed.service_name_snake}}.openapi.yaml"
+  }{{- if .Computed.enable_reason_proto_final }},
+  {
+    "name": "Reason",
+    "url": "./reason-proto/reason.openapi.yaml"
+  }{{- end }}
+]

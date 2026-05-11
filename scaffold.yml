@@ -57,6 +57,10 @@ questions:
       message: API template (simple=single Get method, full=complete CRUD)?
       default: "simple"
 
+  - name: openapi_dev_url
+    prompt:
+      message: OpenAPI dev server URL (leave empty to use https://example.com/api/{service})?
+
   # ==================== Database Configuration ====================
   - name: enable_db
     prompt:
@@ -160,6 +164,8 @@ computed:
   service_name_capitalized: '{{ toPascalCase (or .Scaffold.service_name .Scaffold.Project) }}'
   module_name_final: '{{ or .Scaffold.module_name .Scaffold.service_name .Scaffold.Project }}'
   common_module_final: '{{ or .Scaffold.common_module "github.com/go-cinch/common" }}'
+  openapi_dev_url_final: '{{ or .Scaffold.openapi_dev_url (printf "https://example.com/api/%s" (toKebabCase (or .Scaffold.service_name .Scaffold.Project))) }}'
+  openapi_local_url_final: '{{ printf "http://127.0.0.1:%s" (or .Scaffold.http_port "8080") }}'
   # Middlewares: convert array ["header"] to string "header"
   # Try multiple strategies: check if slice/array using typeOf or printf, fallback to string
   # In --no-prompt mode without middlewares param, use default "header"
@@ -260,6 +266,7 @@ presets:
     module_name: ""
     http_port: "8080"
     grpc_port: "8180"
+    openapi_dev_url: ""
     enable_health_check: "true"
     proto_template: "full"
     enable_db: "true"
@@ -281,6 +288,7 @@ presets:
     module_name: ""
     http_port: "8080"
     grpc_port: "8180"
+    openapi_dev_url: ""
     enable_health_check: "true"
     proto_template: "simple"
     enable_db: "true"
@@ -302,6 +310,7 @@ presets:
     module_name: ""
     http_port: "8080"
     grpc_port: "8180"
+    openapi_dev_url: ""
     enable_health_check: "true"
     proto_template: "full"
     enable_db: "true"

@@ -179,6 +179,7 @@ scaffold new https://github.com/go-cinch/layout-v2 \
 | `module_name` | string | service_name | Go module name |
 | `http_port` | string | `8080` | HTTP server port |
 | `grpc_port` | string | `8180` | gRPC server port |
+| `openapi_dev_url` | string | `https://example.com/api/{service}` | Development server URL in generated OpenAPI docs |
 | `proto_template` | `full`/`simple` | varies | API template (full CRUD or simple GET) |
 | `db_type` | `postgres`/`mysql` | `postgres` | Database type |
 | `orm_type` | `gorm`/`none` | `gorm` | ORM framework |
@@ -259,6 +260,7 @@ make build  # Output: ./bin/myservice
 - HTTP: http://localhost:8080
 - gRPC: localhost:8180
 - Health: http://localhost:8080/health
+- API Docs: http://localhost:8080/docs/
 
 ## Development Workflow
 
